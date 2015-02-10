@@ -42,6 +42,7 @@ body {
     font-size: 6pt;
 }
 
+<<<<<<< HEAD
 #aboutme {
     padding-top: 0px;
     padding-bottom: 5px;
@@ -49,6 +50,8 @@ body {
     word-break: normal;
 }
 
+=======
+>>>>>>> 0c8d934002b6f98260b799f07fdaab2b040e6b42
 #sidebar {
     padding-top: 0px;
     -ms-word-break: break-all;
@@ -98,12 +101,15 @@ a, a:hover {
     margin-bottom: 2px;
 }
 
+<<<<<<< HEAD
 .summary img {
     max-width: 100%;
     height: auto;
 }
 
 
+=======
+>>>>>>> 0c8d934002b6f98260b799f07fdaab2b040e6b42
 .floatright, .align-right {
     float: right;
 }
@@ -170,6 +176,7 @@ figure.floatcenter, .align-center {
 .tagcloud li {
     padding: 0px;
 }
+<<<<<<< HEAD
 
 #banner {
     background-repeat: no-repeat;
@@ -221,3 +228,5 @@ figure.floatcenter, .align-center {
         font-size: 16px;
     }
 }
+=======
+>>>>>>> 0c8d934002b6f98260b799f07fdaab2b040e6b42
