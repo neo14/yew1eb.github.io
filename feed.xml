@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>yew1eb's blog</title><link>http://yew1eb.github.io/</link><description></description><atom:link href="/feed.xml" rel="self"></atom:link><lastBuildDate>Tue, 24 Feb 2015 17:33:00 +0800</lastBuildDate><item><title>Test</title><link>http://yew1eb.github.io/2015/02/TEST.html</link><description>&lt;p&gt;Category: 日常&lt;/p&gt;
+&lt;p&gt;Tags: pelican&lt;/p&gt;
+&lt;p&gt;Slug: Test-Article&lt;/p&gt;
+&lt;p&gt;Test...&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">yew1eb</dc:creator><pubDate>Tue, 24 Feb 2015 17:33:00 +0800</pubDate><guid>tag:yew1eb.github.io,2015-02-24:2015/02/TEST.html</guid></item><item><title>第一篇日志</title><link>http://yew1eb.github.io/2015/02/first-article.html</link><description>&lt;p&gt;Pelican + github 
+The theme is 'Pelican-bootstrap3'&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">yew1eb</dc:creator><pubDate>Tue, 24 Feb 2015 16:33:00 +0800</pubDate><guid>tag:yew1eb.github.io,2015-02-24:2015/02/first-article.html</guid><category>pelican</category></item></channel></rss>
