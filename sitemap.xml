@@ -5,14 +5,22 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>/index.html</loc>
+<<<<<<< HEAD
 <lastmod>2015-02-25T22:20:02-00:00</lastmod>
+=======
+<lastmod>2015-02-24T17:50:04-00:00</lastmod>
+>>>>>>> b6d8bb401ddbd31f08e522f65c1704aa2c65d10d
 <changefreq>daily</changefreq>
 <priority>0.5</priority>
 </url>
 
 <url>
 <loc>/archives.html</loc>
+<<<<<<< HEAD
 <lastmod>2015-02-25T22:20:02-00:00</lastmod>
+=======
+<lastmod>2015-02-24T17:50:04-00:00</lastmod>
+>>>>>>> b6d8bb401ddbd31f08e522f65c1704aa2c65d10d
 <changefreq>daily</changefreq>
 <priority>0.5</priority>
 </url>
@@ -25,6 +33,7 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </url>
 
 <url>
+<<<<<<< HEAD
 <loc>/2015/02/learn-git.html</loc>
 <lastmod>2015-02-25T22:14:12+08:00</lastmod>
 <changefreq>monthly</changefreq>
@@ -32,6 +41,8 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </url>
 
 <url>
+=======
+>>>>>>> b6d8bb401ddbd31f08e522f65c1704aa2c65d10d
 <loc>/2015/02/TEST.html</loc>
 <lastmod>2015-02-24T17:33:00+08:00</lastmod>
 <changefreq>monthly</changefreq>
@@ -46,6 +57,7 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </url>
 
 <url>
+<<<<<<< HEAD
 <loc>/category/gong-ju.html</loc>
 <lastmod>2015-02-25T22:14:12+08:06</lastmod>
 <changefreq>daily</changefreq>
@@ -53,6 +65,8 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </url>
 
 <url>
+=======
+>>>>>>> b6d8bb401ddbd31f08e522f65c1704aa2c65d10d
 <loc>/category/posts.html</loc>
 <lastmod>2015-02-24T17:33:00+08:06</lastmod>
 <changefreq>daily</changefreq>
@@ -73,6 +87,7 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <priority>0.5</priority>
 </url>
 
+<<<<<<< HEAD
 <url>
 <loc>/tag/git.html</loc>
 <lastmod>2015-02-25T22:14:12+08:06</lastmod>
@@ -80,4 +95,6 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <priority>0.5</priority>
 </url>
 
+=======
+>>>>>>> b6d8bb401ddbd31f08e522f65c1704aa2c65d10d
 </urlset>
