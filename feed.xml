@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<<<<<<< HEAD
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>yew1eb's blog</title><link>/</link><description></description><atom:link href="/feed.xml" rel="self"></atom:link><lastBuildDate>Wed, 25 Feb 2015 22:14:12 +0800</lastBuildDate><item><title>git学习小结</title><link>/2015/02/learn-git.html</link><description>&lt;h2&gt;先造一坑 =。=&lt;/h2&gt;
 &lt;p&gt;官方手册：&lt;a href="http://git-scm.com/book/zh/v1"&gt;链接&lt;/a&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">yew1eb</dc:creator><pubDate>Wed, 25 Feb 2015 22:14:12 +0800</pubDate><guid>tag:,2015-02-25:2015/02/learn-git.html</guid><category>git</category></item><item><title>Test</title><link>/2015/02/TEST.html</link><description>&lt;p&gt;Category: 日常&lt;/p&gt;
-=======
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>yew1eb's blog</title><link>/</link><description></description><atom:link href="/feed.xml" rel="self"></atom:link><lastBuildDate>Tue, 24 Feb 2015 17:33:00 +0800</lastBuildDate><item><title>Test</title><link>/2015/02/TEST.html</link><description>&lt;p&gt;Category: 日常&lt;/p&gt;
->>>>>>> b6d8bb401ddbd31f08e522f65c1704aa2c65d10d
 &lt;p&gt;Tags: pelican&lt;/p&gt;
 &lt;p&gt;Slug: Test-Article&lt;/p&gt;
 &lt;p&gt;Test...&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">yew1eb</dc:creator><pubDate>Tue, 24 Feb 2015 17:33:00 +0800</pubDate><guid>tag:,2015-02-24:2015/02/TEST.html</guid></item><item><title>第一篇日志</title><link>/2015/02/first-article.html</link><description>&lt;p&gt;Pelican + github 
