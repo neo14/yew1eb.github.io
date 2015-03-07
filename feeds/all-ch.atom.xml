@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>yew1eb's blog</title><link href="http://yew1eb.github.io/" rel="alternate"></link><link href="/feeds/all-ch.atom.xml" rel="self"></link><id>http://yew1eb.github.io/</id><updated>2015-02-24T17:33:00+08:00</updated><entry><title>Test</title><link href="http://yew1eb.github.io/2015/02/TEST.html" rel="alternate"></link><updated>2015-02-24T17:33:00+08:00</updated><author><name>yew1eb</name></author><id>tag:yew1eb.github.io,2015-02-24:2015/02/TEST.html</id><summary type="html">&lt;p&gt;Category: 日常&lt;/p&gt;
-&lt;p&gt;Tags: pelican&lt;/p&gt;
-&lt;p&gt;Slug: Test-Article&lt;/p&gt;
-&lt;p&gt;Test...&lt;/p&gt;</summary></entry><entry><title>第一篇日志</title><link href="http://yew1eb.github.io/2015/02/first-article.html" rel="alternate"></link><updated>2015-02-24T16:33:00+08:00</updated><author><name>yew1eb</name></author><id>tag:yew1eb.github.io,2015-02-24:2015/02/first-article.html</id><summary type="html">&lt;p&gt;Pelican + github 
-The theme is 'Pelican-bootstrap3'&lt;/p&gt;</summary><category term="pelican"></category></entry></feed>
