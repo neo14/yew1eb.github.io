@@ -198,9 +198,9 @@ whence
 <em> 内核维持一张所有打开文件的文件表，每个文件表项包含文件状态标志、当前文件偏移量、指向文件v节点表项的指针。
 </em> 每个打开文件有一个v节点表，每个v节点包含文件类型、操作函数指针和文件的i节点等。
 * Linux将v节点和i节点实现为独立于文件系统的i节点和依赖文件系统的i节点。</p>
-<p><img alt="" src="http://7xi2wq.com1.z0.glb.clouddn.com/linux_Kernel" title="data structures for open files.png" />
+<p><img alt="" src="http://7xi2wq.com1.z0.glb.clouddn.com/linux_Kernel_data_structures_for_open_files.png" />
 ——打开文件的内核数据结构</p>
-<p><img alt="" src="http://7xi2wq.com1.z0.glb.clouddn.com/linux_Two" title="independent processes with the same file open.png" />
+<p><img alt="" src="http://7xi2wq.com1.z0.glb.clouddn.com/linux_Two_independent_processes_with_the_same_file_open.png" />
 ——两个独立进程各自打开同一个文件</p>
 <p>不同进程共享文件时，每个进程都有一个该文件的文件表项，指向同一个v节点表。多个文件描述符也可能指向同一个文件表项，如使用 dup 函数和 fork 后的父子进程。</p>
 <h2>4.原子操作</h2>
@@ -231,6 +231,14 @@ whence
 dup2,可以用fd2参数指定新描述符的值。如果fd2已经打开，则先将其关闭。若fd等于fd2，则dup2返回fd2，而不关闭它。否则，fd2的FD_CLOEXEC文件描述符标志就被清除，这样fd2在进程调用exec时是打开状态。</p>
 <p><img alt="" src="http://7xi2wq.com1.z0.glb.clouddn.com/linux_Kernel_data_structures_after_dup_1.png.png" />
 ——dup(1)后的内核数据结构</p>
+<h3>3.sync、fsync和fdatasync</h3>
+<p>向文件写入数据时，数据并不马上写入磁盘，内核通常先将数据复制到缓冲区，称为延迟写。</p>
+<div class="highlight"><pre><span class="cp">#include &lt;unistd.h&gt;</span>
+<span class="kt">int</span> <span class="nf">fsync</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">);</span>
+<span class="kt">int</span> <span class="nf">fdatasync</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">);</span>
+   <span class="cm">/* 成功返回0，出错返回-1 */</span>
+<span class="kt">void</span> <span class="nf">sync</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+</pre></div>
             </div>
             <br />
     <!-- JiaThis Button BEGIN -->
@@ -352,8 +360,8 @@ var duoshuoQuery = {short_name:"yew1eb"};
                 <li class="list-group-item"><a href="../../tag/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">标签云</span></h4></a>
                     <ul class="list-group" id="tags">
                         <span class="list-group-item tag-4">
-                            <a href="../../tag/pelican.html">
-                                pelican
+                            <a href="../../tag/markdown.html">
+                                Markdown
                             </a>
                         </span>
                         <span class="list-group-item tag-4">
@@ -362,18 +370,18 @@ var duoshuoQuery = {short_name:"yew1eb"};
                             </a>
                         </span>
                         <span class="list-group-item tag-4">
-                            <a href="../../tag/markdown.html">
-                                Markdown
-                            </a>
-                        </span>
-                        <span class="list-group-item tag-1">
-                            <a href="../../tag/cc.html">
-                                C/C++
+                            <a href="../../tag/pelican.html">
+                                pelican
                             </a>
                         </span>
                         <span class="list-group-item tag-1">
                             <a href="../../tag/linux.html">
                                 Linux
+                            </a>
+                        </span>
+                        <span class="list-group-item tag-1">
+                            <a href="../../tag/cc.html">
+                                C/C++
                             </a>
                         </span>
                     </ul>
