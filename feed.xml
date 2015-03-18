@@ -1,5 +1,540 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>yew1eb's blog</title><link>yew1eb.github.io/</link><description></description><atom:link href="yew1eb.github.io/feed.xml" rel="self"></atom:link><lastBuildDate>Sat, 14 Mar 2015 12:15:15 +0800</lastBuildDate><item><title>Linux系统学习笔记：文件 IO</title><link>yew1eb.github.io/2015/03/linux-file-io.html</link><description>&lt;p&gt;Linux系统中的文件IO主要用到5个函数：open、read、write、lseek、close。这些函数被称为不带缓冲的IO（unbuff IO），不带缓冲指的是每个read和write都调用内核中的一个系统调用。&lt;/p&gt;
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>yew1eb's blog</title><link>yew1eb.github.io/</link><description></description><atom:link href="yew1eb.github.io/feed.xml" rel="self"></atom:link><lastBuildDate>Mon, 16 Mar 2015 09:54:35 +0800</lastBuildDate><item><title>Linux系统学习笔记：进程间通信</title><link>yew1eb.github.io/2015/03/linux-file-ipc.html</link><description>&lt;p&gt;Linux系统的进程间通信（IPC）机制包括管道、FIFO、消息队列、信号量、共享存储和套接字，此外还有一些可选的如流等方式。管道、FIFO、消息队列、信号量和共享存储器属于经典的进程间通信机制，它们用于同一台主机的进程间通信。本篇总结这些进程间通信机制，下一篇总结使用套接字的进程间通信的方法。&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;[TOC]&lt;/p&gt;
+&lt;h2&gt;管道&lt;/h2&gt;
+&lt;p&gt;管道是最古老形式的IPC，它是半双工的，而且只能在有共同祖先的进程间使用。FIFO不受进程关系的限制，UNIX域套接字则同时还是全双工的。&lt;/p&gt;
+&lt;p&gt;用 pipe 函数创建管道。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class="cm"&gt;/* 创建管道&lt;/span&gt;
+&lt;span class="cm"&gt; * @return      成功返回0，出错返回-1 */&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;pipe&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;pipefd&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;
+&lt;span class="n"&gt;pipefd&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="err"&gt;为读打开，&lt;/span&gt; &lt;span class="n"&gt;pipefd&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="err"&gt;为写打开，&lt;/span&gt; &lt;span class="n"&gt;pipefd&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="err"&gt;的输出是&lt;/span&gt; &lt;span class="n"&gt;pipefd&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="err"&gt;的输入。&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;通常在调用 pipe 的进程接着调用 fork 来创建父子进程间的IPC通道。对父进程到子进程的管道，父进程关闭 pipefd[0] ，子进程关闭 pipefd[1] ，子进程到父进程的管道相反。&lt;/p&gt;
+&lt;p&gt;&lt;img alt="" src="http://www.yeolar.com/media/note/2012/05/16/linux-ipc/fig1.png" /&gt;
+创建从父进程到子进程的管道&lt;/p&gt;
+&lt;p&gt;读一个写端被关闭的管道时，在所有数据都被读取后， read 返回0，以表明到了文件结尾。写一个读端被关闭的管道时，产生 SIGPIPE 信号，如果忽略该信号或捕捉信号并从处理程序返回， write 返回-1， errno 设为 EPIPE 。&lt;/p&gt;
+&lt;p&gt;PIPE_BUF 规定了内核中管道缓冲区的大小，写管道或FIFO时，如果有多个进程同时写，且写的字节数超过了 PIPE_BUF ，则写数据可能穿插。&lt;/p&gt;
+&lt;p&gt;例：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;stdlib.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;string.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;sys/wait.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;quot;error.h&amp;quot;&lt;/span&gt;
+
+&lt;span class="cp"&gt;#define DEF_PAGER   &amp;quot;/bin/more&amp;quot;     &lt;/span&gt;&lt;span class="cm"&gt;/* default pager program */&lt;/span&gt;&lt;span class="cp"&gt;&lt;/span&gt;
+
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[])&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="kt"&gt;int&lt;/span&gt;     &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="kt"&gt;int&lt;/span&gt;     &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+    &lt;span class="kt"&gt;pid_t&lt;/span&gt;   &lt;span class="n"&gt;pid&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="kt"&gt;char&lt;/span&gt;    &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;pager&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;argv0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="kt"&gt;char&lt;/span&gt;    &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;MAXLINE&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+    &lt;span class="kt"&gt;FILE&lt;/span&gt;    &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;fp&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;argc&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;err_quit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;usage: a.out &amp;lt;pathname&amp;gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;fp&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;fopen&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;r&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;can&amp;#39;t open %s&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pipe&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;pipe error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;pid&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;fork&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;fork error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pid&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;                           &lt;span class="cm"&gt;/* parent */&lt;/span&gt;
+        &lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;       &lt;span class="cm"&gt;/* close read end */&lt;/span&gt;
+        &lt;span class="cm"&gt;/* parent copies argv[1] to pipe */&lt;/span&gt;
+        &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fgets&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;MAXLINE&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;fp&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="n"&gt;n&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;strlen&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;write&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;write error to pipe&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ferror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fp&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+            &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;fgets error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+        &lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;   &lt;span class="cm"&gt;/* close write end of pipe for reader */&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;waitpid&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pid&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;waitpid error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+        &lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;                                        &lt;span class="cm"&gt;/* child */&lt;/span&gt;
+        &lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;   &lt;span class="cm"&gt;/* close write end */&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;STDIN_FILENO&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;dup2&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;STDIN_FILENO&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;STDIN_FILENO&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;dup2 error to stdin&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+            &lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;   &lt;span class="cm"&gt;/* don&amp;#39;t need this after dup2 */&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="cm"&gt;/* get arguments for execl() */&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;pager&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;getenv&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;PAGER&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;pager&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;DEF_PAGER&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;argv0&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;strrchr&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pager&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="sc"&gt;&amp;#39;/&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;argv0&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;        &lt;span class="cm"&gt;/* step past rightmost slash */&lt;/span&gt;
+        &lt;span class="k"&gt;else&lt;/span&gt;
+            &lt;span class="n"&gt;argv0&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pager&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;  &lt;span class="cm"&gt;/* no slash in pager */&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;execl&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pager&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;argv0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;execl error for %s&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;pager&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;标准I/O库提供了 popen 和 pclose 函数，用来处理创建管道连接另一个进程然后交换数据这种常见情况。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+
+&lt;span class="cm"&gt;/* 创建管道，调用fork产生子进程，关闭管道的不使用端，用shell执行command，然后等待执行终止&lt;/span&gt;
+&lt;span class="cm"&gt; * @return      成功返回文件指针，出错返回NULL */&lt;/span&gt;
+&lt;span class="kt"&gt;FILE&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="nf"&gt;popen&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;command&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;type&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="cm"&gt;/* 关闭标准I/O流，等待command执行结束，返回shell的终止状态&lt;/span&gt;
+&lt;span class="cm"&gt; * @return      成功返回command的终止状态，出错返回-1 */&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;pclose&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;FILE&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;stream&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;type&lt;/span&gt; &lt;span class="err"&gt;为&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;r&amp;quot;&lt;/span&gt; &lt;span class="err"&gt;时，文件指针连接到&lt;/span&gt; &lt;span class="n"&gt;command&lt;/span&gt; &lt;span class="err"&gt;的标准输出；&lt;/span&gt; &lt;span class="n"&gt;type&lt;/span&gt; &lt;span class="err"&gt;为&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;w&amp;quot;&lt;/span&gt; &lt;span class="err"&gt;时，文件指针连接到&lt;/span&gt; &lt;span class="n"&gt;command&lt;/span&gt; &lt;span class="err"&gt;的标准输入。&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;执行 command 使用 sh -c command 的方式，因此可以执行shell扩展。&lt;/p&gt;
+&lt;p&gt;例：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c1"&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+&lt;span class="c1"&gt;#include &amp;lt;stdlib.h&amp;gt;&lt;/span&gt;
+&lt;span class="c1"&gt;#include &amp;lt;sys/wait.h&amp;gt;&lt;/span&gt;
+&lt;span class="c1"&gt;#include &amp;quot;error.h&amp;quot;&lt;/span&gt;
+
+&lt;span class="c1"&gt;#define PAGER   &amp;quot;${PAGER:-more}&amp;quot; /* environment variable, or default */&lt;/span&gt;
+
+&lt;span class="s-Atom"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s-Atom"&gt;int&lt;/span&gt; &lt;span class="s-Atom"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s-Atom"&gt;char&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="s-Atom"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[])&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="s-Atom"&gt;char&lt;/span&gt;    &lt;span class="s-Atom"&gt;line&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;MAXLINE&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+    &lt;span class="nv"&gt;FILE&lt;/span&gt;    &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="s-Atom"&gt;fpin&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="s-Atom"&gt;fpout&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+    &lt;span class="nf"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s-Atom"&gt;argc&lt;/span&gt; &lt;span class="p"&gt;!&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="nf"&gt;err_quit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;usage: a.out &amp;lt;pathname&amp;gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="nf"&gt;if&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s-Atom"&gt;fpin&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nf"&gt;fopen&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s-Atom"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;r&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="nv"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="nf"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;can&amp;#39;t open %s&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s-Atom"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;
+    &lt;span class="nf"&gt;if&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s-Atom"&gt;fpout&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nf"&gt;popen&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;PAGER&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;w&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="nv"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="nf"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;popen error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="cm"&gt;/* copy argv[1] to pager */&lt;/span&gt;
+    &lt;span class="nf"&gt;while&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;fgets&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s-Atom"&gt;line&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;MAXLINE&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s-Atom"&gt;fpin&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;!&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nv"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="nf"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;fputs&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s-Atom"&gt;line&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s-Atom"&gt;fpout&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="nv"&gt;EOF&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="nf"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;fputs error to pipe&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="nf"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;ferror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s-Atom"&gt;fpin&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+        &lt;span class="nf"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;fgets error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="nf"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;pclose&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s-Atom"&gt;fpout&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="nf"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;pclose error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="nf"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;进程同步&lt;/h2&gt;
+&lt;p&gt;可以用管道实现父子进程间的同步。下面是用管道解决竞争条件的版本。 p 字符经由 pfd1 由父进程发送给子进程， c 字符经由 pfd2 由子进程发送给父进程。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nt"&gt;static&lt;/span&gt; &lt;span class="nt"&gt;int&lt;/span&gt;  &lt;span class="nt"&gt;pfd1&lt;/span&gt;&lt;span class="cp"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="cp"&gt;]&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;pfd2&lt;/span&gt;&lt;span class="cp"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="cp"&gt;]&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+&lt;span class="nt"&gt;void&lt;/span&gt; &lt;span class="nt"&gt;TELL_WAIT&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;void&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pipe&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pfd1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; &lt;span class="o"&gt;||&lt;/span&gt; &lt;span class="n"&gt;pipe&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pfd2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;pipe error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="nt"&gt;void&lt;/span&gt; &lt;span class="nt"&gt;TELL_PARENT&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;pid_t&lt;/span&gt; &lt;span class="nt"&gt;pid&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;write&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pfd2&lt;/span&gt;&lt;span class="cp"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="cp"&gt;]&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;c&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;write error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="nt"&gt;void&lt;/span&gt; &lt;span class="nt"&gt;WAIT_PARENT&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;void&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;char&lt;/span&gt;    &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+    &lt;span class="n"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;read&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pfd1&lt;/span&gt;&lt;span class="cp"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="cp"&gt;]&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;read error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;c&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;p&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;err_quit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;WAIT_PARENT: incorrect data&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="nt"&gt;void&lt;/span&gt; &lt;span class="nt"&gt;TELL_CHILD&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;pid_t&lt;/span&gt; &lt;span class="nt"&gt;pid&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;write&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pfd1&lt;/span&gt;&lt;span class="cp"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="cp"&gt;]&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;p&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;write error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="nt"&gt;void&lt;/span&gt; &lt;span class="nt"&gt;WAIT_CHILD&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;void&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;char&lt;/span&gt;    &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+    &lt;span class="n"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;read&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pfd2&lt;/span&gt;&lt;span class="cp"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="cp"&gt;]&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;read error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;c&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;c&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;err_quit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;WAIT_CHILD: incorrect data&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;协同进程&lt;/h2&gt;
+&lt;p&gt;过滤程序从标准输入读取数据，处理之后写到标准输出。一个程序产生过滤程序的输入，同时又读取它的输出时，该过滤程序即称为协同进程。协同进程有连接到另一个进程的两个单向管道。&lt;/p&gt;
+&lt;p&gt;/media/note/2012/05/16/linux-ipc/fig2.png
+协同进程&lt;/p&gt;
+&lt;p&gt;例：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;stdlib.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;string.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;quot;error.h&amp;quot;&lt;/span&gt;
+
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;void&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="kt"&gt;int&lt;/span&gt;     &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;int1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;int2&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="kt"&gt;char&lt;/span&gt;    &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;MAXLINE&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+
+    &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;read&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;STDIN_FILENO&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;MAXLINE&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;        &lt;span class="cm"&gt;/* null terminate */&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;sscanf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;%d%d&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;int1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;int2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="n"&gt;sprintf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;%d&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;int1&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;int2&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+            &lt;span class="n"&gt;n&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;strlen&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;write&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;STDOUT_FILENO&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;write error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;write&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;STDOUT_FILENO&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;invalid args&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;13&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="mi"&gt;13&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;write error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;stdlib.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;string.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;signal.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;quot;error.h&amp;quot;&lt;/span&gt;
+
+&lt;span class="k"&gt;static&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;sig_pipe&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;      &lt;span class="cm"&gt;/* our signal handler */&lt;/span&gt;
+
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;void&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="kt"&gt;int&lt;/span&gt;     &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;fd1&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;fd2&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+    &lt;span class="kt"&gt;pid_t&lt;/span&gt;   &lt;span class="n"&gt;pid&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+    &lt;span class="kt"&gt;char&lt;/span&gt;    &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;MAXLINE&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;signal&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;SIGPIPE&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;sig_pipe&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;SIG_ERR&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;signal error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pipe&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt; &lt;span class="o"&gt;||&lt;/span&gt; &lt;span class="n"&gt;pipe&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;pipe error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;pid&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;fork&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;fork error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pid&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;                           &lt;span class="cm"&gt;/* parent */&lt;/span&gt;
+        &lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd1&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;
+        &lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd2&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;
+        &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fgets&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;MAXLINE&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stdin&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="n"&gt;n&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;strlen&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;write&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd1&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;write error to pipe&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;read&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd2&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;MAXLINE&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;read error from pipe&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+                &lt;span class="n"&gt;err_msg&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;child closed pipe&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+                &lt;span class="k"&gt;break&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+            &lt;span class="p"&gt;}&lt;/span&gt;
+            &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;    &lt;span class="cm"&gt;/* null terminate */&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fputs&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;EOF&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;fputs error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ferror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;stdin&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+            &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;fgets error on stdin&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+        &lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;                                    &lt;span class="cm"&gt;/* child */&lt;/span&gt;
+        &lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd1&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;
+        &lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd2&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd1&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;STDIN_FILENO&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;dup2&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd1&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;STDIN_FILENO&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;STDIN_FILENO&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;dup2 error to stdin&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+            &lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd1&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd2&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;STDOUT_FILENO&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;dup2&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd2&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;STDOUT_FILENO&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;STDOUT_FILENO&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;dup2 error to stdout&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+            &lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd2&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;execl&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;./add2&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;add2&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;err_sys&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;execl error&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="k"&gt;static&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;sig_pipe&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;signo&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;SIGPIPE caught&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;FIFO&lt;/h2&gt;
+&lt;p&gt;FIFO也称为命名管道，使用它，不相关的进程也能交换数据。&lt;/p&gt;
+&lt;p&gt;创建FIFO类似于创建文件，它的路径名会存在于文件系统中。也可用 mkfifo 命令创建FIFO。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;sys/types.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;sys/stat.h&amp;gt;&lt;/span&gt;
+
+&lt;span class="cm"&gt;/* 创建FIFO&lt;/span&gt;
+&lt;span class="cm"&gt; * @return      成功返回0，出错返回-1 */&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;mkfifo&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;pathname&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;mode_t&lt;/span&gt; &lt;span class="n"&gt;mode&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;mode&lt;/span&gt; &lt;span class="err"&gt;参数和&lt;/span&gt; &lt;span class="n"&gt;open&lt;/span&gt; &lt;span class="err"&gt;函数中的相同。&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;open 、 close 、 read 、 write 、 unlink 等文件I/O函数都可用于FIFO。&lt;/p&gt;
+&lt;p&gt;打开FIFO时，如果没有指定 O_NONBLOCK ，只读的 open 会阻塞直到某个进程为写而打开此FIFO，只写的 open 也会阻塞直到有进程为读打开。如果指定了 O_NONBLOCK ，只读 open 会立即返回，只写 open 如果没有相应的读进程则出错返回-1， errno 设为 ENXIO 。&lt;/p&gt;
+&lt;p&gt;和管道类似，读写端被关闭的FIFO会产生一个文件结束标志，写读端被关闭的FIFO产生信号 SIGPIPE 。&lt;/p&gt;
+&lt;p&gt;FIFO可由shell命令使用来避免创建中间临时文件，也可用于C/S架构中客户进程和服务器进程间传递数据。&lt;/p&gt;
+&lt;h2&gt;XSI IPC&lt;/h2&gt;
+&lt;p&gt;XSI IPC指消息队列、信号量和共享存储器，它们属于内核中的IPC结构。&lt;/p&gt;
+&lt;p&gt;内核中的IPC结构用非负整数标识符来引用，IPC标识符是累加的。标识符是IPC对象的内部名，IPC对象还有一个相关联的键作为外部名。键的类型为 key_t ，创建IPC结构时需要指定键，它会由内核变换为标识符。&lt;/p&gt;
+&lt;p&gt;客户进程和服务器进程访问同一个IPC结构主要有三种方式：&lt;/p&gt;
+&lt;p&gt;服务器进程指定 IPC_PRIVATE 来创建新的IPC结构，然后将返回的标识符通过文件或 exec 的参数（父子进程的情况）等方式告诉客户进程。
+在公共头文件中定义客户进程和服务器进程都认可的键，然后服务器进程用该键来创建新的IPC结构，需要注意该键可能会已经关联了IPC结构，因此需要删除已存在的IPC结构。
+用客户进程和服务器进程都认可的路径名和项目ID （0~255）来创建键，然后在方式2中使用该键。
+ftok 函数由路径名和项目ID产生键。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;sys/types.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;sys/ipc.h&amp;gt;&lt;/span&gt;
+
+&lt;span class="cm"&gt;/* 由路径名和项目ID产生键&lt;/span&gt;
+&lt;span class="cm"&gt; * @return      成功返回键，出错返回-1 */&lt;/span&gt;
+&lt;span class="kt"&gt;key_t&lt;/span&gt; &lt;span class="nf"&gt;ftok&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;pathname&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;proj_id&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;pathname&lt;/span&gt; &lt;span class="err"&gt;必须为现存的文件，&lt;/span&gt; &lt;span class="n"&gt;proj_id&lt;/span&gt; &lt;span class="err"&gt;只被使用低&lt;/span&gt;&lt;span class="mi"&gt;8&lt;/span&gt;&lt;span class="err"&gt;位。&lt;/span&gt;
+
+&lt;span class="n"&gt;msgget&lt;/span&gt; &lt;span class="err"&gt;、&lt;/span&gt; &lt;span class="n"&gt;semget&lt;/span&gt; &lt;span class="err"&gt;、&lt;/span&gt; &lt;span class="n"&gt;shmget&lt;/span&gt; &lt;span class="err"&gt;函数都有&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="err"&gt;和&lt;/span&gt; &lt;span class="n"&gt;flag&lt;/span&gt; &lt;span class="err"&gt;参数，如果&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="err"&gt;为&lt;/span&gt; &lt;span class="n"&gt;IPC_PRIVATE&lt;/span&gt; &lt;span class="err"&gt;，或&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="err"&gt;当前未与&lt;/span&gt;&lt;span class="n"&gt;IPC&lt;/span&gt;&lt;span class="err"&gt;结构关联且&lt;/span&gt; &lt;span class="n"&gt;flag&lt;/span&gt; &lt;span class="err"&gt;指定了&lt;/span&gt; &lt;span class="n"&gt;IPC_CREAT&lt;/span&gt; &lt;span class="err"&gt;位，则函数创建新的&lt;/span&gt;&lt;span class="n"&gt;IPC&lt;/span&gt;&lt;span class="err"&gt;结构。&lt;/span&gt; &lt;span class="n"&gt;IPC_PRIVATE&lt;/span&gt; &lt;span class="err"&gt;总是用于创建新&lt;/span&gt;&lt;span class="n"&gt;IPC&lt;/span&gt;&lt;span class="err"&gt;结构。&lt;/span&gt;
+
+&lt;span class="err"&gt;每个&lt;/span&gt;&lt;span class="n"&gt;IPC&lt;/span&gt;&lt;span class="err"&gt;结构有一个&lt;/span&gt; &lt;span class="n"&gt;ipc_perm&lt;/span&gt; &lt;span class="err"&gt;结构，它限定了权限和所有者，该结构的定义如下：&lt;/span&gt;
+
+&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;ipc_perm&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="kt"&gt;__uid_t&lt;/span&gt; &lt;span class="n"&gt;uid&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;                &lt;span class="cm"&gt;/* 所有者有效用户ID */&lt;/span&gt;
+    &lt;span class="kt"&gt;__gid_t&lt;/span&gt; &lt;span class="n"&gt;gid&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;                &lt;span class="cm"&gt;/* 所有者有效组ID */&lt;/span&gt;
+    &lt;span class="kt"&gt;__uid_t&lt;/span&gt; &lt;span class="n"&gt;cuid&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;               &lt;span class="cm"&gt;/* 创建者有效用户ID */&lt;/span&gt;
+    &lt;span class="kt"&gt;__gid_t&lt;/span&gt; &lt;span class="n"&gt;cgid&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;               &lt;span class="cm"&gt;/* 创建者有效组ID */&lt;/span&gt;
+    &lt;span class="kt"&gt;unsigned&lt;/span&gt; &lt;span class="kt"&gt;short&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;mode&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;    &lt;span class="cm"&gt;/* 访问权限 */&lt;/span&gt;
+    &lt;span class="cm"&gt;/* ... */&lt;/span&gt;
+&lt;span class="p"&gt;};&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;IPC结构创建时， ipc_perm 结构中的字段会被设初值，可以用 msgctl 、 semctl 、 shmctl 来修改 uid 、 gid 和 mode 字段，但进程必须是超级用户或IPC结构的创建者。&lt;/p&gt;
+&lt;p&gt;XSI IPC的权限位有：&lt;/p&gt;
+&lt;p&gt;权限  位   权限  位   权限  位
+用户读 0400    组读  0040    其他读 0004
+用户写（更改） 0200    组写（更改）  0020    其他写（更改） 0002
+其中信号量不称为写而是更改。&lt;/p&gt;
+&lt;p&gt;用 ipcs -l 可以查看三种IPC的限制。&lt;/p&gt;
+&lt;h3&gt;消息队列&lt;/h3&gt;
+&lt;p&gt;消息队列是消息的链接表，存放在内核中并由消息队列ID标识。&lt;/p&gt;
+&lt;p&gt;每个消息队列都有一个关联的 msqid_ds 结构，它记录了消息队列的当前状态，该结构的定义如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;struct msqid_ds {
+    struct ipc_perm msg_perm;
+    time_t          msg_stime;    /* 上次msgsnd的时间 */
+    time_t          msg_rtime;    /* 上次msgrcv的时间 */
+    time_t          msg_ctime;    /* 上次修改的时间 */
+    unsigned long   __msg_cbytes; /* 队列中当前字节数 */
+    msgqnum_t       msg_qnum;     /* 队列中当前消息数 */
+    msglen_t        msg_qbytes;   /* 队列的最大字节数 */
+    pid_t           msg_lspid;    /* 上次msgsnd的进程ID */
+    pid_t           msg_lrpid;    /* 上次msgrcv的进程ID */
+};
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;msgget 函数创建新消息队列或打开现存的消息队列。创建新队列时， msgflg 指定 msg_perm.mode 的权限位设置。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;sys/types.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;sys/ipc.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;sys/msg.h&amp;gt;&lt;/span&gt;
+
+&lt;span class="cm"&gt;/* 创建新消息队列或打开现存的消息队列&lt;/span&gt;
+&lt;span class="cm"&gt; * @return      成功返回消息队列ID，出错返回-1 */&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;msgget&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;key_t&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;msgflg&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;msgctl&lt;/span&gt; &lt;span class="err"&gt;函数执行对消息队列的操作。&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;sys/types.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;sys/ipc.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;sys/msg.h&amp;gt;&lt;/span&gt;
+
+&lt;span class="cm"&gt;/* 执行对消息队列的操作&lt;/span&gt;
+&lt;span class="cm"&gt; * @return      成功返回0，出错返回-1 */&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;msgctl&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;msqid&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;cmd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;msqid_ds&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;buf&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;cmd&lt;/span&gt; &lt;span class="err"&gt;参数指定要执行的命令，有：&lt;/span&gt;
+
+&lt;span class="n"&gt;IPC_STAT&lt;/span&gt; &lt;span class="err"&gt;：获取消息队列的&lt;/span&gt; &lt;span class="n"&gt;msqid_ds&lt;/span&gt; &lt;span class="err"&gt;结构，保存在&lt;/span&gt; &lt;span class="n"&gt;buf&lt;/span&gt; &lt;span class="err"&gt;中。&lt;/span&gt;
+&lt;span class="n"&gt;IPC_SET&lt;/span&gt; &lt;span class="err"&gt;：根据&lt;/span&gt; &lt;span class="n"&gt;buf&lt;/span&gt; &lt;span class="err"&gt;指向结构的值，设置&lt;/span&gt; &lt;span class="n"&gt;msg_perm&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;uid&lt;/span&gt; &lt;span class="err"&gt;、&lt;/span&gt; &lt;span class="n"&gt;msg_perm&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;gid&lt;/span&gt; &lt;span class="err"&gt;、&lt;/span&gt; &lt;span class="n"&gt;msg_perm&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;mode&lt;/span&gt; &lt;span class="err"&gt;、&lt;/span&gt; &lt;span class="n"&gt;msg_qbytes&lt;/span&gt; &lt;span class="err"&gt;。进程必须是超级用户进程或有效用户&lt;/span&gt;&lt;span class="n"&gt;ID&lt;/span&gt;&lt;span class="err"&gt;等于&lt;/span&gt; &lt;span class="n"&gt;msg_perm&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;cuid&lt;/span&gt; &lt;span class="err"&gt;或&lt;/span&gt; &lt;span class="n"&gt;msg_perm&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;uid&lt;/span&gt; &lt;span class="err"&gt;，增加&lt;/span&gt; &lt;span class="n"&gt;msg_qbytes&lt;/span&gt; &lt;span class="err"&gt;的值则必须是超级用户。&lt;/span&gt;
+&lt;span class="n"&gt;IPC_RMID&lt;/span&gt; &lt;span class="err"&gt;：从系统中删除消息队列和其中的所有数据，删除会立即生效。进程必须是超级用户进程或有效用户&lt;/span&gt;&lt;span class="n"&gt;ID&lt;/span&gt;&lt;span class="err"&gt;等于&lt;/span&gt; &lt;span class="n"&gt;msg_perm&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;cuid&lt;/span&gt; &lt;span class="err"&gt;或&lt;/span&gt; &lt;span class="n"&gt;msg_perm&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;uid&lt;/span&gt; &lt;span class="err"&gt;。&lt;/span&gt;
+&lt;span class="n"&gt;msgsnd&lt;/span&gt; &lt;span class="err"&gt;函数将消息放到消息队列中，&lt;/span&gt; &lt;span class="n"&gt;msgrcv&lt;/span&gt; &lt;span class="err"&gt;函数从消息队列中取消息。消息总是添加在队列末尾。函数成功返回时，内核会更新和消息队列关联的&lt;/span&gt; &lt;span class="n"&gt;msqid_ds&lt;/span&gt; &lt;span class="err"&gt;结构。&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;sys/types.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;sys/ipc.h&amp;gt;&lt;/span&gt;
+&lt;span class="cp"&gt;#include &amp;lt;sys/msg.h&amp;gt;&lt;/span&gt;
+
+&lt;span class="cm"&gt;/* 将消息放到消息队列中&lt;/span&gt;
+&lt;span class="cm"&gt; * @return      成功返回0，出错返回-1 */&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;msgsnd&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;msqid&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;msgp&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;size_t&lt;/span&gt; &lt;span class="n"&gt;msgsz&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;msgflg&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="cm"&gt;/* 从消息队列中取消息&lt;/span&gt;
+&lt;span class="cm"&gt; * @return      成功返回消息的数据部分的长度，出错返回-1 */&lt;/span&gt;
+&lt;span class="kt"&gt;ssize_t&lt;/span&gt; &lt;span class="nf"&gt;msgrcv&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;msqid&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;msgp&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;size_t&lt;/span&gt; &lt;span class="n"&gt;msgsz&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;long&lt;/span&gt; &lt;span class="n"&gt;msgtyp&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;msgflg&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;msgp&lt;/span&gt; &lt;span class="err"&gt;指向一个长整型数，它包含正整数的消息类型，在后面是消息数据，&lt;/span&gt; &lt;span class="n"&gt;msgsz&lt;/span&gt; &lt;span class="err"&gt;给出消息数据的长度，它可以为&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="err"&gt;。若发送&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="err"&gt;字节数据的消息，可以定义消息的结构为：&lt;/span&gt;
+
+&lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;msgbuf&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="kt"&gt;long&lt;/span&gt; &lt;span class="n"&gt;mtype&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;     &lt;span class="cm"&gt;/* 消息类型，&amp;gt;0 */&lt;/span&gt;
+    &lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="n"&gt;mtext&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;  &lt;span class="cm"&gt;/* 消息数据 */&lt;/span&gt;
+&lt;span class="p"&gt;};&lt;/span&gt;
+&lt;span class="err"&gt;可以用消息类型来以非先进先出的次序取消息。&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;msgtyp 可以指定需要的消息：&lt;/p&gt;
+&lt;p&gt;= 0 时，返回消息队列中的第一个消息。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;0 时，返回消息队列中消息类型为 msgtyp 的第一个消息。
+&amp;lt; 0 时，返回消息队列中消息类型小于等于 msgtyp 绝对值的消息，取其中类型值最小者。
+对 msgsnd ， msgflg 指定为 IPC_NOWAIT 时，若消息队列已满，立即出错返回；若没有指定，则进程阻塞，直到有空间、消息队列被删除或捕捉到信号为止。对 msgrcv ， msgflg 指定为 IPC_NOWAIT 时，若没有指定的消息，立即出错返回；若没有指定，同样阻塞进程。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;msgflg 设置 MSG_NOERROR 时，若 msgrcv 返回的消息大于 msgsz ，则自动截短；若没设置而消息过长时，会出错返回，消息留在消息队列中。&lt;/p&gt;
+&lt;p&gt;信号量&lt;/p&gt;
+&lt;p&gt;信号量是一个计数器，用于多进程对共享数据对象的访问。进程获取共享资源时，测试控制该资源的信号量。若信号量的值为正，则进程可以使用资源，进程将信号量的值减1；若信号量的值为0，则进程休眠直到信号量的值大于0。进程不再使用资源时，信号量的值加1，如果有休眠等待的进程，则唤醒它们，进程被唤醒后，重新测试。&lt;/p&gt;
+&lt;p&gt;信号量集是一个或多个信号量的集合，内核为每个信号量集设置了一个 semid_ds 结构，它的定义如下：&lt;/p&gt;
+&lt;p&gt;struct semid_ds {
+    struct ipc_perm sem_perm;
+    time_t          sem_otime; /&lt;em&gt; 上次semop的时间 &lt;/em&gt;/
+    time_t          sem_ctime; /&lt;em&gt; 上次修改的时间 &lt;/em&gt;/
+    unsigned short  sem_nsems; /&lt;em&gt; 信号量数量 &lt;/em&gt;/
+};
+每个信号量是一个无名结构，包含下列成员：&lt;/p&gt;
+&lt;p&gt;unsigned short  semval;   /&lt;em&gt; 信号量的值，&amp;gt;=0 &lt;/em&gt;/
+unsigned short  semzcnt;  /&lt;em&gt; 等待信号量的值为0的进程 &lt;/em&gt;/
+unsigned short  semncnt;  /&lt;em&gt; 等待信号量的值增加的进程 &lt;/em&gt;/
+pid_t           sempid;   /&lt;em&gt; 上次操作的进程ID &lt;/em&gt;/
+semget 函数创建新信号量集或引用现存的信号量集。创建新信号量集时， nsems 指定 sem_nsems ， semflg 指定 sem_perm.mode 的权限位设置。引用现存的信号量集时， nsems 设为0。&lt;/p&gt;
+&lt;h1&gt;include &lt;sys/types.h&gt;&lt;/h1&gt;
+&lt;h1&gt;include &lt;sys/ipc.h&gt;&lt;/h1&gt;
+&lt;h1&gt;include &lt;sys/sem.h&gt;&lt;/h1&gt;
+&lt;p&gt;/&lt;em&gt; 创建新信号量集或引用现存的信号量集
+ * @return      成功返回信号量集ID，出错返回-1 &lt;/em&gt;/
+int semget(key_t key, int nsems, int semflg);
+semctl 函数执行对信号量的操作。&lt;/p&gt;
+&lt;h1&gt;include &lt;sys/types.h&gt;&lt;/h1&gt;
+&lt;h1&gt;include &lt;sys/ipc.h&gt;&lt;/h1&gt;
+&lt;h1&gt;include &lt;sys/sem.h&gt;&lt;/h1&gt;
+&lt;p&gt;/&lt;em&gt; 执行对信号量的操作 &lt;/em&gt;/
+int semctl(int semid, int semnum, int cmd, ... /&lt;em&gt; union semun arg &lt;/em&gt;/);
+第四个参数是可选的，它的类型为联合 semun ，该联合的定义如下：&lt;/p&gt;
+&lt;p&gt;union semun {
+    int             val;    /&lt;em&gt; 用于SETVAL的值 &lt;/em&gt;/
+    struct semid_ds &lt;em&gt;buf;   /&lt;/em&gt; 用于IPC_STAT, IPC_SET的缓冲 &lt;em&gt;/
+    unsigned short  &lt;/em&gt;array; /&lt;em&gt; 用于GETALL, SETALL的数组 &lt;/em&gt;/
+    struct seminfo  &lt;em&gt;__buf; /&lt;/em&gt; 用于IPC_INFO的缓冲 */
+};
+cmd 参数可以指定的命令有：&lt;/p&gt;
+&lt;p&gt;IPC_STAT ：取信号量集的 semid_ds 结构，存放在 arg.buf 指向的结构中。
+IPC_SET ：根据 arg.buf 指向的结构中的值设置信号量集 semid_ds 结构中的 sem_perm.uid 、 sem_perm.gid 、 sem_perm.mode 。进程必须是超级用户进程或有效用户ID等于 sem_perm.cuid 或 sem_perm.uid 。
+IPC_RMID ：从系统中删除信号量集，删除会立即生效。进程必须是超级用户进程或有效用户ID等于 sem_perm.cuid 或 sem_perm.uid 。
+GETVAL ：获取 semnum 指定的信号的 semval 值。
+SETVAL ：根据 arg.val 设置 semnum 指定的信号的 semval 值。
+GETZCNT ：获取 semnum 指定的信号的 semzcnt 值。
+GETNCNT ：获取 semnum 指定的信号的 semncnt 值。
+GETPID ：获取 semnum 指定的信号的 sempid 值。
+GETALL ：获取信号量集中所有信号量的值，存放在 arg.array 指向的数组中。
+SETALL ：根据 arg.array 指向的数组中的值设置信号量集中所有信号量的值。
+针对特定信号量时，用 semnum 指定信号量，它取0到 nsems-1 之间的值。&lt;/p&gt;
+&lt;p&gt;除 GETALL 之外的 GET 命令，函数返回结果，其他命令函数返回0，出错时返回-1。&lt;/p&gt;
+&lt;p&gt;semop 自动执行信号量集上的操作数组。&lt;/p&gt;
+&lt;h1&gt;include &lt;sys/types.h&gt;&lt;/h1&gt;
+&lt;h1&gt;include &lt;sys/ipc.h&gt;&lt;/h1&gt;
+&lt;h1&gt;include &lt;sys/sem.h&gt;&lt;/h1&gt;
+&lt;p&gt;/&lt;em&gt; 执行信号量集上的操作数组
+ * @return      成功返回0，出错返回-1 &lt;/em&gt;/
+int semop(int semid, struct sembuf &lt;em&gt;sops, unsigned nsops);
+int semtimedop(int semid, struct sembuf &lt;/em&gt;sops, unsigned nsops,
+               struct timespec *timeout);
+sops 参数指向信号量操作数组，信号量操作由 sembuf 结构表示：&lt;/p&gt;
+&lt;p&gt;struct sembuf {
+    unsigned short sem_num; /&lt;em&gt; semnum &lt;/em&gt;/
+    short    sem_op;        /&lt;em&gt; 操作 &lt;/em&gt;/
+    short    sem_flg;       /&lt;em&gt; 操作选项 &lt;/em&gt;/
+};
+nsops 参数指定数组的元素数。&lt;/p&gt;
+&lt;p&gt;sem_op 有三种取值：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;0 时，表示释放该信号量控制的资源。信号量的值加上 sem_op ，若 sem_flg 指定了 SEM_UNDO ，则同时信号量的调整值减去 sem_op 。
+&amp;lt; 0 时，表示获取该信号量控制的资源。若信号量的值大于等于 sem_op 的绝对值，即具有所需的资源：信号量的值减去 sem_op 的绝对值，若 sem_flg 指定了 SEM_UNDO ，则同时信号量的调整值加上 sem_op 的绝对值。若信号量的值小于 sem_op 的绝对值，即资源不能满足需求：
+若 sem_flg 指定了 IPC_NOWAIT ，则函数出错返回。
+若没指定 IPC_NOWAIT ，信号量的 semncnt 值加1，挂起进程直到：
+信号量大于等于 sem_op 的绝对值，即有进程释放了一些资源，然后 semncnt 减1，并如获取资源时那样减小信号量的值等等。
+从系统中删除了信号量，这时函数出错返回。
+进程捕捉到信号，这时信号量的 semncnt 减1，函数出错返回。
+= 0 时，表示进程希望等待到信号量的值变为0。若信号量的值为0，函数立即返回。若信号量的值非0，和2中信号量的值小于 sem_op 的绝对值时的情况类似，区别是信号量和0比较。
+进程终止时，如果它占用了信号量分配的资源，信号量不会调整，这会造成麻烦。信号量操作指定 SEM_UNDO 标志时，进程终止时内核会进行检查并根据调整值进行处理。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;用 SETVAL 或 SETALL 命令的 semctl 函数设置信号量的值时，该信号量的调整值会被设为0，这对所有进程有效。&lt;/p&gt;
+&lt;p&gt;共享存储&lt;/p&gt;
+&lt;p&gt;共享存储允许两个或更多进程共享给定的存储区，它是最快的一种IPC。使用共享存储时要处理多个进程间的同步，这可以使用信号量或记录锁。共享存储可由不相关的进程使用，如果进程是相关的，也可以使用 mmap 来处理。&lt;/p&gt;
+&lt;p&gt;在地址空间中，共享存储紧靠在栈之下。&lt;/p&gt;
+&lt;p&gt;内核为每个共享存储段设置了一个 shmid_ds 结构，它的定义如下：&lt;/p&gt;
+&lt;p&gt;struct shmid_ds {
+    struct ipc_perm shm_perm;
+    size_t          shm_segsz;   /&lt;em&gt; 段字节数 &lt;/em&gt;/
+    time_t          shm_atime;   /&lt;em&gt; 上次连接时间 &lt;/em&gt;/
+    time_t          shm_dtime;   /&lt;em&gt; 上次脱接时间 &lt;/em&gt;/
+    time_t          shm_ctime;   /&lt;em&gt; 上次修改时间 &lt;/em&gt;/
+    pid_t           shm_cpid;    /&lt;em&gt; 创建者进程ID &lt;/em&gt;/
+    pid_t           shm_lpid;    /&lt;em&gt; 上次shmat/shmdt的进程ID &lt;/em&gt;/
+    shmatt_t        shm_nattch;  /&lt;em&gt; 当前连接者数目 &lt;/em&gt;/
+    /&lt;em&gt; ... &lt;/em&gt;/
+};
+shmget 函数创建新共享存储段或引用现存的共享存储段。创建新共享存储段时， size 指定 shm_segsz ， shmflg 指定 shm_perm.mode 的权限位设置。引用现存的共享存储段时， size 设为0。创建新段时，段的内容会初始化为0。&lt;/p&gt;
+&lt;h1&gt;include &lt;sys/ipc.h&gt;&lt;/h1&gt;
+&lt;h1&gt;include &lt;sys/shm.h&gt;&lt;/h1&gt;
+&lt;p&gt;/&lt;em&gt; 创建新共享存储段或引用现存的共享存储段
+ * @return      成功返回共享存储ID，出错返回-1 &lt;/em&gt;/
+int shmget(key_t key, size_t size, int shmflg);
+shmctl 函数执行对共享存储段的操作。&lt;/p&gt;
+&lt;h1&gt;include &lt;sys/ipc.h&gt;&lt;/h1&gt;
+&lt;h1&gt;include &lt;sys/shm.h&gt;&lt;/h1&gt;
+&lt;p&gt;/&lt;em&gt; 执行对共享存储段的操作
+ * @return      成功返回0，出错返回-1 &lt;/em&gt;/
+int shmctl(int shmid, int cmd, struct shmid_ds *buf);
+cmd 参数可以指定为：&lt;/p&gt;
+&lt;p&gt;IPC_STAT ：获取共享存储段的 shmid_ds 结构，保存在 buf 中。
+IPC_SET ：根据 buf 指向结构的值，设置 shm_perm.uid 、 shm_perm.gid 、 shm_perm.mode 。进程必须是超级用户进程或有效用户ID等于 shm_perm.cuid 或 shm_perm.uid 。
+IPC_RMID ：从系统中删除共享存储段，此时不能再连接该段，但直到使用该段的最后一个进程终止或和该段脱接时才会实际删除该段。进程必须是超级用户进程或有效用户ID等于 shm_perm.cuid 或 shm_perm.uid 。
+SHM_LOCK ：将共享存储段锁定在内存中，只能由超级用户执行。
+SHM_UNLOCK ：将共享存储段解锁，只能由超级用户执行。
+进程可以用 shmat 函数将共享存储段连接到它的地址空间中，用 shmdt 函数脱接共享存储段。执行成功时 shm_nattch 会相应地加减1。&lt;/p&gt;
+&lt;h1&gt;include &lt;sys/types.h&gt;&lt;/h1&gt;
+&lt;h1&gt;include &lt;sys/shm.h&gt;&lt;/h1&gt;
+&lt;p&gt;/&lt;em&gt; 将共享存储段连接到进程的地址空间中
+ * @return      成功返回指向共享存储的指针，出错返回-1 &lt;/em&gt;/
+void &lt;em&gt;shmat(int shmid, const void &lt;/em&gt;shmaddr, int shmflg);
+/&lt;em&gt; 脱接共享存储段
+ * @return      成功返回0，出错返回-1 &lt;/em&gt;/
+int shmdt(const void *shmaddr);
+若 shmaddr 为0，则共享存储段连接到内核选择的第一个地址上。若 shmaddr 非0，且 shmflg 没有指定 SHM_RND ，则共享存储段连接到 shmaddr 指定的地址上；若 shmflg 指定了 SHM_RND ，则将 shmaddr 向下取整（ SHMLBA 的倍数）。一般将 shmaddr 设为0。&lt;/p&gt;
+&lt;p&gt;shmflg 中指定了 SHM_RDONLY 位时以只读方式连接共享存储段，否则以读写方式连接。&lt;/p&gt;
+&lt;p&gt;脱接共享存储段时并不删除共享存储段，删除它需要使用 IPC_RMID 命令的 shmctl 函数。&lt;/p&gt;
+&lt;h2&gt;XSI IPC的一些问题&lt;/h2&gt;
+&lt;p&gt;消息队列、信号量和共享存储实现在内核中，通常它们的效率较高。&lt;/p&gt;
+&lt;p&gt;此外，把消息队列和其他的IPC进行比较：&lt;/p&gt;
+&lt;p&gt;IPC类型   无连接 可靠  流控制 记录  消息类型或优先级
+消息队列    否   是   是   是   是
+STREAMS 否   是   是   是   是
+FIFO    否   是   是   否   否
+UNIX域流套接字   否   是   是   否   否
+UNIX域数据报套接字 是   是   否   是   否
+无连接指不需要某种创建就能发送消息；流控制指不能接收更多消息时发送进程休眠。&lt;/p&gt;
+&lt;p&gt;XSI IPC的缺点是这些IPC结构在系统范围内生效，没有访问计数，创建它的进程终止时，IPC结构会遗留在系统中，直到用 xxxctl 函数显式地删除（或者是执行 ipcrm 命令、重启系统）。&lt;/p&gt;
+&lt;p&gt;另一个缺点是它们不具有文件系统中的名字，所以不能使用 select 和 poll 等函数同时处理多个IPC结构。&lt;/p&gt;
+&lt;p&gt;一般建议用全双工管道和记录锁代替使用消息队列和信号量，可以考虑用 mmap 函数代替共享存储，它们的使用要更为简单。&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">yew1eb</dc:creator><pubDate>Mon, 16 Mar 2015 09:54:35 +0800</pubDate><guid>tag:,2015-03-16:yew1eb.github.io/2015/03/linux-file-ipc.html</guid><category>Linux</category></item><item><title>Linux系统学习笔记：文件 IO</title><link>yew1eb.github.io/2015/03/linux-file-io.html</link><description>&lt;p&gt;Linux系统中的文件IO主要用到5个函数：open、read、write、lseek、close。这些函数被称为不带缓冲的IO（unbuff IO），不带缓冲指的是每个read和write都调用内核中的一个系统调用。&lt;/p&gt;
 &lt;hr /&gt;
 &lt;h2&gt;1.文件描述符&lt;/h2&gt;
 &lt;p&gt;在Linux下用文件描述符来表示设备文件和普通文件，所有对文件的操作都通过文件描述符实现。文件描述符是一个非负整数。&lt;br /&gt;
@@ -11,7 +546,7 @@
 &lt;/ul&gt;
 &lt;p&gt;这三个符号常量定义在&lt;unistd.h&gt;中&lt;/p&gt;
 &lt;h2&gt;2.标准IO函数&lt;/h2&gt;
-&lt;h3&gt;1.open和creat&lt;/h3&gt;
+&lt;h3&gt;2.1 open和creat&lt;/h3&gt;
 &lt;p&gt;使用open和creat打开或创建文件。  &lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;fcntl.h&amp;gt;&lt;/span&gt;
 &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;oflag&lt;/span&gt;&lt;span class="p"&gt;,...&lt;/span&gt;&lt;span class="cm"&gt;/* mode_t mode */&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
@@ -54,7 +589,7 @@ path &lt;br /&gt;
 &lt;li&gt;S_IXUSR 用户对文件有执行权限&lt;/li&gt;
 &lt;li&gt;...  &lt;/li&gt;
 &lt;/ul&gt;
-&lt;h3&gt;2.close&lt;/h3&gt;
+&lt;h3&gt;2.2 close&lt;/h3&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
 &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;close&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
 &lt;span class="cm"&gt;/* 成功返回0，出错返回-1*/&lt;/span&gt;
@@ -62,7 +597,7 @@ path &lt;br /&gt;
 
 
 &lt;p&gt;关闭文件时会释放该进程加在文件上的所有记录锁。进程终止时，内核会自动关闭它打开的文件。&lt;/p&gt;
-&lt;h3&gt;3.lseek&lt;/h3&gt;
+&lt;h3&gt;2.3 lseek&lt;/h3&gt;
 &lt;p&gt;每个打开文件都用一个与其相关联的“当前文件偏移量”，通常为一个非负整数，表示从文件开始的字节数。读/写操作从当前文件偏移量处开始，使偏移量增加读写的字节数。默认打开文件偏移量为0，以 O_APPEND 打开偏移量为文件的字节数。可以用 lseek 设置文件的偏移量。&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
 &lt;span class="kt"&gt;off_t&lt;/span&gt; &lt;span class="nf"&gt;lseek&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;off_t&lt;/span&gt; &lt;span class="n"&gt;offset&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;whence&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
@@ -78,7 +613,7 @@ whence
 + SEEK_END， 相对文件结尾处&lt;/p&gt;
 &lt;p&gt;lseek 并不引起I/O操作，偏移量记录在内核中。
 普通文件的偏移量必须是非负整数。偏移量可以大于文件的长度，这样之后的写会形成一个空洞，空洞不占存储，其中的字节被读为0。可以写一个这样的文件，用 od -c 命令验证一下，还可用 ls -ls 命令查看磁盘块占用情况。&lt;/p&gt;
-&lt;h3&gt;4.read&lt;/h3&gt;
+&lt;h3&gt;2.4 read&lt;/h3&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
 &lt;span class="kt"&gt;ssize_t&lt;/span&gt; &lt;span class="nf"&gt;read&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;buf&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;size_t&lt;/span&gt; &lt;span class="n"&gt;count&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
 &lt;span class="cm"&gt;/*成功返回读到的字节数，已到文件尾返回0，出错返回-1 */&lt;/span&gt;&lt;span class="err"&gt;*/&lt;/span&gt;
@@ -86,7 +621,7 @@ whence
 
 
 &lt;p&gt;受文件大小、网络缓冲区、管道、FIFO的实际字节数的限制，实际读到的数据可能少于要读的字节数，信号中断也会造成这种情况。终端设备通常一次最多读一行，磁带等设备一次最多读一个记录。&lt;/p&gt;
-&lt;h3&gt;5.write&lt;/h3&gt;
+&lt;h3&gt;2.5 write&lt;/h3&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
 &lt;span class="kt"&gt;ssize_t&lt;/span&gt; &lt;span class="nf"&gt;write&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;const&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;buf&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;size_t&lt;/span&gt; &lt;span class="n"&gt;nbytes&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
@@ -107,7 +642,7 @@ whence
 &lt;h2&gt;4.原子操作&lt;/h2&gt;
 &lt;p&gt;原子操作指有多步组成的操作，执行时要么全部执行，要么一步也不执行。
 多个进程共享同一个文件，可能造成进程对文件的连续的操作被打乱，这就需要使操作成为原子操作。如 O_APPEND 将到尾端和写入数据组成原子操作，还有 O_CREAT 和 O_EXCL 将检查文件是否存在和创建文件组成原子操作。&lt;/p&gt;
-&lt;h3&gt;1.pread和pwrite&lt;/h3&gt;
+&lt;h3&gt;4.1 pread和pwrite&lt;/h3&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
 &lt;span class="kt"&gt;ssize_t&lt;/span&gt; &lt;span class="nf"&gt;pread&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;buf&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;size_t&lt;/span&gt; &lt;span class="n"&gt;nbytes&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;off_t&lt;/span&gt; &lt;span class="n"&gt;offset&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
 &lt;span class="cm"&gt;/* 成功返回读到的字节数，已到文件尾返回0，出错返回-1 */&lt;/span&gt;
@@ -120,7 +655,7 @@ whence
 + 调用pread时，无法中断其定位和读操作
 + 不更新当前文件偏移量  &lt;/p&gt;
 &lt;p&gt;pwrite类似&lt;/p&gt;
-&lt;h3&gt;2.dup和dup2&lt;/h3&gt;
+&lt;h3&gt;4.2 dup和dup2&lt;/h3&gt;
 &lt;p&gt;dup和dup2函数用来复制现有的文件描述符&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
 &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;dup&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
@@ -132,13 +667,24 @@ whence
 dup2,可以用fd2参数指定新描述符的值。如果fd2已经打开，则先将其关闭。若fd等于fd2，则dup2返回fd2，而不关闭它。否则，fd2的FD_CLOEXEC文件描述符标志就被清除，这样fd2在进程调用exec时是打开状态。&lt;/p&gt;
 &lt;p&gt;&lt;img alt="" src="http://7xi2wq.com1.z0.glb.clouddn.com/linux_Kernel_data_structures_after_dup_1.png.png" /&gt;
 ——dup(1)后的内核数据结构&lt;/p&gt;
-&lt;h3&gt;3.sync、fsync和fdatasync&lt;/h3&gt;
+&lt;h3&gt;2.3 sync、fsync和fdatasync&lt;/h3&gt;
 &lt;p&gt;向文件写入数据时，数据并不马上写入磁盘，内核通常先将数据复制到缓冲区，称为延迟写。&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
 &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;fsync&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
 &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;fdatasync&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
    &lt;span class="cm"&gt;/* 成功返回0，出错返回-1 */&lt;/span&gt;
 &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;sync&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;void&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;sync 只是将所有修改过的块缓冲区排入写队列。通常，系统的update守护进程会周期调用sync函数，flush内核的块缓冲区。
+fsync 对指定文件刷新块缓冲区，等待写磁盘结束，更新文件属性
+fdatasync 对指定文件刷新块缓冲区，等待写磁盘结束，不更新文件属性&lt;/p&gt;
+&lt;h3&gt;2.4 fcntl&lt;/h3&gt;
+&lt;p&gt;fcntl函数可以改变已经打开文件的属性&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;fcntl.h&amp;gt;&lt;/span&gt;
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;fcntl&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;cmd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;...&lt;/span&gt;&lt;span class="cm"&gt;/* int arg */&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="cm"&gt;/*  成功依赖于cmd，出错返回-1 */&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">yew1eb</dc:creator><pubDate>Sat, 14 Mar 2015 12:15:15 +0800</pubDate><guid>tag:,2015-03-14:yew1eb.github.io/2015/03/linux-file-io.html</guid><category>Linux</category></item><item><title>sizeof</title><link>yew1eb.github.io/2015/03/sizeof.html</link><description>&lt;h3&gt;sizeof&lt;/h3&gt;
 &lt;p&gt;1、  结构体的大小等于结构体内最大成员大小的整数倍
 2、  结构体内的成员的首地址相对于结构体首地址的偏移量是其类型大小的整数倍，比如说double型成员相对于结构体的首地址的地址偏移量应该是8的倍数。&lt;/p&gt;

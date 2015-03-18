@@ -42,6 +42,7 @@ yew1eb's blog            </a>
         </div>
         <div class="collapse navbar-collapse navbar-ex1-collapse">
             <ul class="nav navbar-nav">
+                    <li><a href="http://blog.csdn.net/yew1eb/">csdn博客(ACM)</a></li>
  
                          <li><a href="../../about.html">
                              关于
@@ -110,7 +111,7 @@ yew1eb's blog            </a>
 </ul>
 <p>这三个符号常量定义在<unistd.h>中</p>
 <h2>2.标准IO函数</h2>
-<h3>1.open和creat</h3>
+<h3>2.1 open和creat</h3>
 <p>使用open和creat打开或创建文件。  </p>
 <div class="highlight"><pre><span class="cp">#include &lt;fcntl.h&gt;</span>
 <span class="kt">int</span> <span class="nf">open</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">path</span><span class="p">,</span> <span class="kt">int</span> <span class="n">oflag</span><span class="p">,...</span><span class="cm">/* mode_t mode */</span><span class="p">);</span>
@@ -153,7 +154,7 @@ path <br />
 <li>S_IXUSR 用户对文件有执行权限</li>
 <li>...  </li>
 </ul>
-<h3>2.close</h3>
+<h3>2.2 close</h3>
 <div class="highlight"><pre><span class="cp">#include &lt;unistd.h&gt;</span>
 <span class="kt">int</span> <span class="nf">close</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">);</span>
 <span class="cm">/* 成功返回0，出错返回-1*/</span>
@@ -161,7 +162,7 @@ path <br />
 
 
 <p>关闭文件时会释放该进程加在文件上的所有记录锁。进程终止时，内核会自动关闭它打开的文件。</p>
-<h3>3.lseek</h3>
+<h3>2.3 lseek</h3>
 <p>每个打开文件都用一个与其相关联的“当前文件偏移量”，通常为一个非负整数，表示从文件开始的字节数。读/写操作从当前文件偏移量处开始，使偏移量增加读写的字节数。默认打开文件偏移量为0，以 O_APPEND 打开偏移量为文件的字节数。可以用 lseek 设置文件的偏移量。</p>
 <div class="highlight"><pre><span class="cp">#include &lt;unistd.h&gt;</span>
 <span class="kt">off_t</span> <span class="nf">lseek</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">int</span> <span class="n">whence</span><span class="p">);</span>
@@ -177,7 +178,7 @@ whence
 + SEEK_END， 相对文件结尾处</p>
 <p>lseek 并不引起I/O操作，偏移量记录在内核中。
 普通文件的偏移量必须是非负整数。偏移量可以大于文件的长度，这样之后的写会形成一个空洞，空洞不占存储，其中的字节被读为0。可以写一个这样的文件，用 od -c 命令验证一下，还可用 ls -ls 命令查看磁盘块占用情况。</p>
-<h3>4.read</h3>
+<h3>2.4 read</h3>
 <div class="highlight"><pre><span class="cp">#include &lt;unistd.h&gt;</span>
 <span class="kt">ssize_t</span> <span class="nf">read</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">count</span><span class="p">);</span>
 <span class="cm">/*成功返回读到的字节数，已到文件尾返回0，出错返回-1 */</span><span class="err">*/</span>
@@ -185,7 +186,7 @@ whence
 
 
 <p>受文件大小、网络缓冲区、管道、FIFO的实际字节数的限制，实际读到的数据可能少于要读的字节数，信号中断也会造成这种情况。终端设备通常一次最多读一行，磁带等设备一次最多读一个记录。</p>
-<h3>5.write</h3>
+<h3>2.5 write</h3>
 <div class="highlight"><pre><span class="cp">#include &lt;unistd.h&gt;</span>
 <span class="kt">ssize_t</span> <span class="nf">write</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">nbytes</span><span class="p">);</span>
 </pre></div>
@@ -206,7 +207,7 @@ whence
 <h2>4.原子操作</h2>
 <p>原子操作指有多步组成的操作，执行时要么全部执行，要么一步也不执行。
 多个进程共享同一个文件，可能造成进程对文件的连续的操作被打乱，这就需要使操作成为原子操作。如 O_APPEND 将到尾端和写入数据组成原子操作，还有 O_CREAT 和 O_EXCL 将检查文件是否存在和创建文件组成原子操作。</p>
-<h3>1.pread和pwrite</h3>
+<h3>4.1 pread和pwrite</h3>
 <div class="highlight"><pre><span class="cp">#include &lt;unistd.h&gt;</span>
 <span class="kt">ssize_t</span> <span class="nf">pread</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">nbytes</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">offset</span><span class="p">);</span>
 <span class="cm">/* 成功返回读到的字节数，已到文件尾返回0，出错返回-1 */</span>
@@ -219,7 +220,7 @@ whence
 + 调用pread时，无法中断其定位和读操作
 + 不更新当前文件偏移量  </p>
 <p>pwrite类似</p>
-<h3>2.dup和dup2</h3>
+<h3>4.2 dup和dup2</h3>
 <p>dup和dup2函数用来复制现有的文件描述符</p>
 <div class="highlight"><pre><span class="cp">#include &lt;unistd.h&gt;</span>
 <span class="kt">int</span> <span class="nf">dup</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">);</span>
@@ -231,13 +232,24 @@ whence
 dup2,可以用fd2参数指定新描述符的值。如果fd2已经打开，则先将其关闭。若fd等于fd2，则dup2返回fd2，而不关闭它。否则，fd2的FD_CLOEXEC文件描述符标志就被清除，这样fd2在进程调用exec时是打开状态。</p>
 <p><img alt="" src="http://7xi2wq.com1.z0.glb.clouddn.com/linux_Kernel_data_structures_after_dup_1.png.png" />
 ——dup(1)后的内核数据结构</p>
-<h3>3.sync、fsync和fdatasync</h3>
+<h3>2.3 sync、fsync和fdatasync</h3>
 <p>向文件写入数据时，数据并不马上写入磁盘，内核通常先将数据复制到缓冲区，称为延迟写。</p>
 <div class="highlight"><pre><span class="cp">#include &lt;unistd.h&gt;</span>
 <span class="kt">int</span> <span class="nf">fsync</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">);</span>
 <span class="kt">int</span> <span class="nf">fdatasync</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">);</span>
    <span class="cm">/* 成功返回0，出错返回-1 */</span>
 <span class="kt">void</span> <span class="nf">sync</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+</pre></div>
+
+
+<p>sync 只是将所有修改过的块缓冲区排入写队列。通常，系统的update守护进程会周期调用sync函数，flush内核的块缓冲区。
+fsync 对指定文件刷新块缓冲区，等待写磁盘结束，更新文件属性
+fdatasync 对指定文件刷新块缓冲区，等待写磁盘结束，不更新文件属性</p>
+<h3>2.4 fcntl</h3>
+<p>fcntl函数可以改变已经打开文件的属性</p>
+<div class="highlight"><pre><span class="cp">#include &lt;fcntl.h&gt;</span>
+<span class="kt">int</span> <span class="nf">fcntl</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">cmd</span><span class="p">,</span> <span class="p">...</span><span class="cm">/* int arg */</span><span class="p">);</span>
+    <span class="cm">/*  成功依赖于cmd，出错返回-1 */</span>
 </pre></div>
             </div>
             <br />
@@ -272,6 +284,11 @@ dup2,可以用fd2参数指定新描述符的值。如果fd2已经打开，则先
             <li>
                 <a href="../../2015/03/sizeof.html">
                     上一篇文章：sizeof
+                </a>
+            </li>
+            <li>
+                <a href="../../2015/03/linux-file-ipc.html">
+                    下一篇文章：Linux系统学习笔记：进程间通信
                 </a>
             </li>
         </ul>
@@ -310,6 +327,11 @@ var duoshuoQuery = {short_name:"yew1eb"};
                 <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">最新日志</span></h4>
                     <ul class="list-group" id="recentposts">
                         <li class="list-group-item">
+                            <a href="../../2015/03/linux-file-ipc.html">
+                                Linux系统学习笔记：进程间通信
+                            </a>
+                        </li>
+                        <li class="list-group-item">
                             <a href="../../2015/03/linux-file-io.html">
                                 Linux系统学习笔记：文件 IO
                             </a>
@@ -327,11 +349,6 @@ var duoshuoQuery = {short_name:"yew1eb"};
                         <li class="list-group-item">
                             <a href="../../2015/03/linux-init.html">
                                 Linux系统学习笔记：序
-                            </a>
-                        </li>
-                        <li class="list-group-item">
-                            <a href="../../2015/03/c_static.html">
-                                static有什么作用？
                             </a>
                         </li>
                     </ul>
@@ -365,13 +382,13 @@ var duoshuoQuery = {short_name:"yew1eb"};
                             </a>
                         </span>
                         <span class="list-group-item tag-4">
-                            <a href="../../tag/make.html">
-                                Make
+                            <a href="../../tag/pelican.html">
+                                pelican
                             </a>
                         </span>
                         <span class="list-group-item tag-4">
-                            <a href="../../tag/pelican.html">
-                                pelican
+                            <a href="../../tag/make.html">
+                                Make
                             </a>
                         </span>
                         <span class="list-group-item tag-1">
@@ -379,7 +396,7 @@ var duoshuoQuery = {short_name:"yew1eb"};
                                 Linux
                             </a>
                         </span>
-                        <span class="list-group-item tag-1">
+                        <span class="list-group-item tag-2">
                             <a href="../../tag/cc.html">
                                 C/C++
                             </a>
