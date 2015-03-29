@@ -15,7 +15,7 @@
             <meta property="og:type" content="article"/>
             <meta property="og:title" content="Linux系统学习笔记：进程间通信"/>
             <meta property="og:url" content="../../2015/03/linux-file-ipc.html"/>
-            <meta property="og:description" content="Linux系统的进程间通信（IPC）机制包括管道、FIFO、消息队列、信号量、共享存储和套接字，此外还有一些可选的如流等方式。管道、FIFO ..."/>
+            <meta property="og:description" content="Linux系统的进程间通信（IPC）机制包括__管道(pipe)、__FIFO、消息队列、信号量(semaphore)、共享存储和__套接字(socket ..."/>
 
     <!-- Bootstrap -->
     <link rel="stylesheet" href="../../theme/css/bootstrap.yeti.min.css" type="text/css"/>
@@ -99,7 +99,7 @@ yew1eb's blog            </a>
 	<a href="../../tag/linux.html">Linux</a>
 </footer><!-- /.post-info -->                    </div>
                 </div>
-                <p>Linux系统的进程间通信（IPC）机制包括管道、FIFO、消息队列、信号量、共享存储和套接字，此外还有一些可选的如流等方式。管道、FIFO、消息队列、信号量和共享存储器属于经典的进程间通信机制，它们用于同一台主机的进程间通信。本篇总结这些进程间通信机制，下一篇总结使用套接字的进程间通信的方法。</p>
+                <p>Linux系统的进程间通信（IPC）机制包括__管道(pipe)<strong>、__FIFO</strong>、<strong>消息队列</strong>、<strong>信号量(semaphore)</strong>、共享存储和__套接字(socket)__，此外还有一些可选的如流等方式。管道、FIFO、消息队列、信号量和共享存储器属于经典的进程间通信机制，它们用于同一台主机的进程间通信。本篇总结这些进程间通信机制，下一篇总结使用套接字的进程间通信的方法。</p>
 <hr />
 <p>[TOC]</p>
 <h2>管道</h2>
@@ -670,6 +670,11 @@ UNIX域数据报套接字 是   是   否   是   否
                     上一篇文章：Linux系统学习笔记：文件 IO
                 </a>
             </li>
+            <li>
+                <a href="../../2015/03/linux-process.html">
+                    下一篇文章：Linux系统学习笔记：进程
+                </a>
+            </li>
         </ul>
     </div>
 			
@@ -706,6 +711,11 @@ var duoshuoQuery = {short_name:"yew1eb"};
                 <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">最新日志</span></h4>
                     <ul class="list-group" id="recentposts">
                         <li class="list-group-item">
+                            <a href="../../2015/03/linux-process.html">
+                                Linux系统学习笔记：进程
+                            </a>
+                        </li>
+                        <li class="list-group-item">
                             <a href="../../2015/03/linux-file-ipc.html">
                                 Linux系统学习笔记：进程间通信
                             </a>
@@ -713,11 +723,6 @@ var duoshuoQuery = {short_name:"yew1eb"};
                         <li class="list-group-item">
                             <a href="../../2015/03/linux-file-io.html">
                                 Linux系统学习笔记：文件 IO
-                            </a>
-                        </li>
-                        <li class="list-group-item">
-                            <a href="../../2015/03/sizeof.html">
-                                sizeof
                             </a>
                         </li>
                         <li class="list-group-item">
@@ -736,11 +741,6 @@ var duoshuoQuery = {short_name:"yew1eb"};
                 <li class="list-group-item"><a href="../../category/index.html"><h4><i class="fa fa-coffee fa-lg"></i><span class="icon-label">日志分类</span></h4></a>
                     <ul class="list-group" id="categories">
                         <li class="list-group-item">
-                            <a href="../../category/cc.html">
-                                <i class="fa fa-folder-open fa-lg"></i> C/C++
-                            </a>
-                        </li>
-                        <li class="list-group-item">
                             <a href="../../category/linuxxi-tong-xue-xi-bi-ji.html">
                                 <i class="fa fa-folder-open fa-lg"></i> Linux系统学习笔记
                             </a>
@@ -756,18 +756,8 @@ var duoshuoQuery = {short_name:"yew1eb"};
                 <li class="list-group-item"><a href="../../tag/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">标签云</span></h4></a>
                     <ul class="list-group" id="tags">
                         <span class="list-group-item tag-4">
-                            <a href="../../tag/markdown.html">
-                                Markdown
-                            </a>
-                        </span>
-                        <span class="list-group-item tag-4">
                             <a href="../../tag/pelican.html">
                                 pelican
-                            </a>
-                        </span>
-                        <span class="list-group-item tag-4">
-                            <a href="../../tag/make.html">
-                                Make
                             </a>
                         </span>
                         <span class="list-group-item tag-1">
@@ -775,9 +765,14 @@ var duoshuoQuery = {short_name:"yew1eb"};
                                 Linux
                             </a>
                         </span>
-                        <span class="list-group-item tag-2">
-                            <a href="../../tag/cc.html">
-                                C/C++
+                        <span class="list-group-item tag-4">
+                            <a href="../../tag/make.html">
+                                Make
+                            </a>
+                        </span>
+                        <span class="list-group-item tag-4">
+                            <a href="../../tag/markdown.html">
+                                Markdown
                             </a>
                         </span>
                     </ul>

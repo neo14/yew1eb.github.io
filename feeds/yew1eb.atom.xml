@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>yew1eb's blog</title><link href="yew1eb.github.io/" rel="alternate"></link><link href="yew1eb.github.io/feeds%5Cyew1eb.atom.xml" rel="self"></link><id>yew1eb.github.io/</id><updated>2015-03-16T09:54:35+08:00</updated><entry><title>Linux系统学习笔记：进程间通信</title><link href="yew1eb.github.io/2015/03/linux-file-ipc.html" rel="alternate"></link><updated>2015-03-16T09:54:35+08:00</updated><author><name>yew1eb</name></author><id>tag:,2015-03-16:yew1eb.github.io/2015/03/linux-file-ipc.html</id><summary type="html">&lt;p&gt;Linux系统的进程间通信（IPC）机制包括管道、FIFO、消息队列、信号量、共享存储和套接字，此外还有一些可选的如流等方式。管道、FIFO、消息队列、信号量和共享存储器属于经典的进程间通信机制，它们用于同一台主机的进程间通信。本篇总结这些进程间通信机制，下一篇总结使用套接字的进程间通信的方法。&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>yew1eb's blog</title><link href="yew1eb.github.io/" rel="alternate"></link><link href="yew1eb.github.io/feeds%5Cyew1eb.atom.xml" rel="self"></link><id>yew1eb.github.io/</id><updated>2015-03-18T11:22:35+08:00</updated><entry><title>Linux系统学习笔记：进程</title><link href="yew1eb.github.io/2015/03/linux-process.html" rel="alternate"></link><updated>2015-03-18T11:22:35+08:00</updated><author><name>yew1eb</name></author><id>tag:,2015-03-18:yew1eb.github.io/2015/03/linux-process.html</id><summary type="html">&lt;h2&gt;Linux系统学习笔记：进程&lt;/h2&gt;</summary><category term="Linux"></category></entry><entry><title>Linux系统学习笔记：进程间通信</title><link href="yew1eb.github.io/2015/03/linux-file-ipc.html" rel="alternate"></link><updated>2015-03-16T09:54:35+08:00</updated><author><name>yew1eb</name></author><id>tag:,2015-03-16:yew1eb.github.io/2015/03/linux-file-ipc.html</id><summary type="html">&lt;p&gt;Linux系统的进程间通信（IPC）机制包括__管道(pipe)&lt;strong&gt;、__FIFO&lt;/strong&gt;、&lt;strong&gt;消息队列&lt;/strong&gt;、&lt;strong&gt;信号量(semaphore)&lt;/strong&gt;、共享存储和__套接字(socket)__，此外还有一些可选的如流等方式。管道、FIFO、消息队列、信号量和共享存储器属于经典的进程间通信机制，它们用于同一台主机的进程间通信。本篇总结这些进程间通信机制，下一篇总结使用套接字的进程间通信的方法。&lt;/p&gt;
 &lt;hr /&gt;
 &lt;p&gt;[TOC]&lt;/p&gt;
 &lt;h2&gt;管道&lt;/h2&gt;
@@ -685,11 +685,7 @@ fdatasync 对指定文件刷新块缓冲区，等待写磁盘结束，不更新�
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;fcntl.h&amp;gt;&lt;/span&gt;
 &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;fcntl&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;cmd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;...&lt;/span&gt;&lt;span class="cm"&gt;/* int arg */&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
     &lt;span class="cm"&gt;/*  成功依赖于cmd，出错返回-1 */&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;</summary><category term="Linux"></category></entry><entry><title>sizeof</title><link href="yew1eb.github.io/2015/03/sizeof.html" rel="alternate"></link><updated>2015-03-13T16:53:12+08:00</updated><author><name>yew1eb</name></author><id>tag:,2015-03-13:yew1eb.github.io/2015/03/sizeof.html</id><summary type="html">&lt;h3&gt;sizeof&lt;/h3&gt;
-&lt;p&gt;1、  结构体的大小等于结构体内最大成员大小的整数倍
-2、  结构体内的成员的首地址相对于结构体首地址的偏移量是其类型大小的整数倍，比如说double型成员相对于结构体的首地址的地址偏移量应该是8的倍数。&lt;/p&gt;
-&lt;h3&gt;线程安全和线程不安全理解&lt;/h3&gt;
-&lt;p&gt;&lt;a href="http://blog.csdn.net/ghevinn/article/details/37764791"&gt;link&lt;/a&gt;&lt;/p&gt;</summary><category term="C/C++"></category></entry><entry><title>Make 编译工具的使用</title><link href="yew1eb.github.io/2015/03/make.html" rel="alternate"></link><updated>2015-03-13T07:52:17+08:00</updated><author><name>yew1eb</name></author><id>tag:,2015-03-13:yew1eb.github.io/2015/03/make.html</id><summary type="html">&lt;h3&gt;Make 编译工具的使用&lt;/h3&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="Linux"></category></entry><entry><title>Make 编译工具的使用</title><link href="yew1eb.github.io/2015/03/make.html" rel="alternate"></link><updated>2015-03-13T07:52:17+08:00</updated><author><name>yew1eb</name></author><id>tag:,2015-03-13:yew1eb.github.io/2015/03/make.html</id><summary type="html">&lt;h3&gt;Make 编译工具的使用&lt;/h3&gt;
 &lt;hr /&gt;
 &lt;p&gt;&lt;a href="http://linux.cn/article-4930-weibo.html"&gt;Make命令教程&lt;/a&gt;
 &lt;a href="https://www.gnu.org/software/make/manual/make.html"&gt;GNU make&lt;/a&gt;
@@ -758,30 +754,7 @@ fdatasync 对指定文件刷新块缓冲区，等待写磁盘结束，不更新�
 &lt;li&gt;/var/spool 放置“假脱机( spool )”程序的目录，如mail、news、打印队列和其他队列工作的目录。每个不同的spool在/var/spool 下有自己的子目录，例如，用户的邮箱就存放在/var/spool/mail 中。  &lt;/li&gt;
 &lt;li&gt;/var/tmp 比/tmp 允许更大的或需要存在较长时间的临时文件。注意系统管理员可能不允许/var/tmp 有很旧的文件。  &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/blockquote&gt;</summary><category term="Linux"></category></entry><entry><title>static有什么作用？</title><link href="yew1eb.github.io/2015/03/c_static.html" rel="alternate"></link><updated>2015-03-12T12:15:15+08:00</updated><author><name>yew1eb</name></author><id>tag:,2015-03-12:yew1eb.github.io/2015/03/c_static.html</id><summary type="html">&lt;p&gt;面试题：static有什么作用？&lt;/p&gt;
-&lt;p&gt;答：在C语言中，static主要定义全局静态变量，定义局部静态变量，定义静态函数&lt;/p&gt;
-&lt;p&gt;一、       定义全局静态变量 ：在全局变量前面加上关键字static，该全局变量变成了全局静态变量。全局静态变量有以下特点：&lt;/p&gt;
-&lt;p&gt;（1）       在全局数据区内分配内存&lt;/p&gt;
-&lt;p&gt;（2）       如果没有初始化，其默认值为0&lt;/p&gt;
-&lt;p&gt;（3）       该变量在本文件内从定义开始到文件结束可见&lt;/p&gt;
-&lt;p&gt;二、       定义局部静态变量：在局部静态变量前面加上关键字static，该局部变量便成了静态局部变量。静态局部变量有以下特点:&lt;/p&gt;
-&lt;p&gt;（1）       该变量在全局数据区分配内存&lt;/p&gt;
-&lt;p&gt;（2）       如果不显示初始化，那么将被隐式初始化为0&lt;/p&gt;
-&lt;p&gt;（3）       它始终驻留在全局数据区，直到程序运行结束&lt;/p&gt;
-&lt;p&gt;（4）       其作用域为局部作用域，当定义它的函数或语句块结束时，其作用域随之结束。&lt;/p&gt;
-&lt;p&gt;三、       定义静态函数：在函数的返回类型加上static关键字，函数即被定义成静态函数。静态函数有以下特点：&lt;/p&gt;
-&lt;p&gt;（1）       静态函数只能在本源文件中使用&lt;/p&gt;
-&lt;p&gt;（2）       在文件作用域中声明的inline函数默认为static&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;            说明：静态函数只是一个普通的全局函数，只不过受static限制，他只能在文件坐在的编译单位内使用，不能呢个在其他编译单位内使用。
-&lt;/pre&gt;&lt;/div&gt;
-
-
-&lt;p&gt;在C++语言中新增了两种作用：定义静态数据成员或静态函数成员&lt;/p&gt;
-&lt;p&gt;一，       定义静态数据成员。静态数据成员有如下特点：&lt;/p&gt;
-&lt;p&gt;（1）       内存分配：在程序的全局数据区分配&lt;/p&gt;
-&lt;p&gt;（2）       初始化和定义：静态数据成员定义时要分配空间，所以不能在类声明中初始化。&lt;/p&gt;
-&lt;p&gt;二，       静态成员函数。静态成员函数与类相联系，不与类的对象相联系。静态成员函数不能访问非静态数据成员。原因很简单，非静态数据成员属于特定的类实例，静态成员函数主要用于对静态数据成员的操作。&lt;/p&gt;
-&lt;p&gt;（1）       静态成员函数没有this指针。&lt;/p&gt;</summary><category term="C/C++"></category></entry><entry><title>Pelican文章格式和Markdown基本语法</title><link href="yew1eb.github.io/2015/02/first-article.html" rel="alternate"></link><updated>2015-02-24T16:33:00+08:00</updated><author><name>yew1eb</name></author><id>tag:,2015-02-24:yew1eb.github.io/2015/02/first-article.html</id><summary type="html">&lt;h2&gt;pelican-blog文章的基本格式&lt;/h2&gt;
+&lt;/blockquote&gt;</summary><category term="Linux"></category></entry><entry><title>Pelican文章格式和Markdown基本语法</title><link href="yew1eb.github.io/2015/02/first-article.html" rel="alternate"></link><updated>2015-02-24T16:33:00+08:00</updated><author><name>yew1eb</name></author><id>tag:,2015-02-24:yew1eb.github.io/2015/02/first-article.html</id><summary type="html">&lt;h2&gt;pelican-blog文章的基本格式&lt;/h2&gt;
 &lt;hr /&gt;
 &lt;p&gt;Title: 标题&lt;br /&gt;
 Date: 日期&lt;br /&gt;
