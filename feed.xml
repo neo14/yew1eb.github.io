@@ -1,5 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>yew1eb's blog</title><link>yew1eb.github.io/</link><description></description><atom:link href="yew1eb.github.io/feed.xml" rel="self"></atom:link><lastBuildDate>Mon, 30 Mar 2015 00:00:00 +0800</lastBuildDate><item><title>C++中德虚函数</title><link>yew1eb.github.io/2015/03/C_plus_plus_virtual.html</link><description>&lt;h3&gt;参考文章&lt;/h3&gt;
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>yew1eb's blog</title><link>yew1eb.github.io/</link><description></description><atom:link href="yew1eb.github.io/feed.xml" rel="self"></atom:link><lastBuildDate>Tue, 31 Mar 2015 13:05:48 +0800</lastBuildDate><item><title>c++中的结构体大小计算（内存对齐）</title><link>yew1eb.github.io/2015/03/C_plus_plus_struct.html</link><description>&lt;h3&gt;参考文章&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://www.cnblogs.com/ppboy_dxh/archive/2013/08/21/3273376.html"&gt;计算结构体大小&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">yew1eb</dc:creator><pubDate>Tue, 31 Mar 2015 13:05:48 +0800</pubDate><guid>tag:,2015-03-31:yew1eb.github.io/2015/03/C_plus_plus_struct.html</guid><category>C/C++</category><category>volatile</category></item><item><title>c++中的volatile关键字</title><link>yew1eb.github.io/2015/03/C_plus_plus_volatile.html</link><description>&lt;p&gt;&amp;nbsp;volatile和const关键字一样，是一个类型修饰符，表示变量可以被编译器的某些未知因素修改，比如操作系统，硬件，某些线程等。遇到这个关键字声明的变量，编译器访问该变量的代码将不再进行优化，以提供特殊地址的稳定访问。&lt;/p&gt;
+&lt;p&gt;使用该关键字的例子如下： &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;int volatile nVint;//当要求使用volatile声明的变量的值的时候，系统总是重新从它所在的内存读取数据，即使它前面的指令刚刚从该处读取过数据。而且读取的数据立刻被保存。
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;对于这样的代码：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;volatile int i = 10; 
+int a = i;
+... //其他代码，并未明确告诉编译器，对i进行过操作
+int b = i;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;volatile 指出 i是随时可能发生变化的，每次使用它的时候必须从i的地址中读取，因而编译器生成的汇编代码会重新从i的地址读取数据放在b中。而优化做法是，由于编译器发现两次从i读数据的代码之间的代码没有对i进行过操作，它会自动把上次读的数据放在b中。而不是重新从i里面读。这样以来，如果i是一个寄存器变量或者表示一个端口数据就容易出错，所以说volatile可以保证对特殊地址的稳定访问。&lt;/p&gt;
+&lt;h3&gt;多线程下的volatile&lt;/h3&gt;
+&lt;p&gt;&amp;nbsp;&amp;nbsp;有些变量是用volatile关键字声明的。当两个线程都要用到某一个变量且该变量的值会被改变时，应该用volatile声明，该关键字的作用是防止优化编译器把变量从内存装入CPU寄存器中。如果变量被装入寄存器，那么两个线程有可能一个使用内存中的变量，一个使用寄存器中的变量，这会造成程序的错误执行。volatile的意思是让编译器每次操作该变量时一定要从内存中真正取出，而不是使用已经存在寄存器中的值。&lt;/p&gt;
+&lt;h3&gt;一般说来，volatile用在如下的几个地方&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;中断服务程序中修改的供其它程序检测的变量需要加volatile；&lt;/li&gt;
+&lt;li&gt;多任务环境下各任务间共享的标志应该加volatile；&lt;/li&gt;
+&lt;li&gt;存储器映射的硬件寄存器通常也要加volatile说明，因为每次对它的读写都可能由不同意义。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;另外，以上这几种情况经常还要同时考虑数据的完整性（相互关联的几个标志读了一半被打断了重写），在1中可以通过关中断来实现，2中可以禁止任务调度，3中则只能依靠硬件的良好设计了。&lt;/p&gt;
+&lt;h3&gt;参考文章：&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://hedengcheng.com/?p=725"&gt;C/C++ Volatile关键词深度剖析 --何登成&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">yew1eb</dc:creator><pubDate>Tue, 31 Mar 2015 13:05:48 +0800</pubDate><guid>tag:,2015-03-31:yew1eb.github.io/2015/03/C_plus_plus_volatile.html</guid><category>C/C++</category><category>volatile</category></item><item><title>C++中的虚函数</title><link>yew1eb.github.io/2015/03/C_plus_plus_virtual.html</link><description>&lt;h3&gt;参考文章&lt;/h3&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href="http://blog.csdn.net/haoel/article/details/1948051/"&gt;C++ 虚函数表解析 --陈皓&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="http://blog.chinaunix.net/uid-23735893-id-2976429.html"&gt;虚函数 原理&lt;/a&gt;&lt;/li&gt;
