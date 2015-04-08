@@ -3,7 +3,7 @@
       xmlns:og="http://ogp.me/ns#"
       xmlns:fb="https://www.facebook.com/2008/fbml">
 <head>
-    <title>volatile - yew1eb's blog</title>
+    <title>Linux系统学习笔记：文件属性与权限 - yew1eb's blog</title>
     <!-- Using the latest rendering mode for IE -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta charset="utf-8">
@@ -12,18 +12,18 @@
 
 	
     <!-- Open Graph tags -->
-            <meta property="og:type" content="website"/>
-            <meta property="og:title" content="yew1eb's blog"/>
-            <meta property="og:url" content=".."/>
-            <meta property="og:description" content="yew1eb's blog"/>
+            <meta property="og:type" content="article"/>
+            <meta property="og:title" content="Linux系统学习笔记：文件属性与权限"/>
+            <meta property="og:url" content="../../2015/04/linux-File_attribute_and_authority.html"/>
+            <meta property="og:description" content=""/>
 
     <!-- Bootstrap -->
-    <link rel="stylesheet" href="../theme/css/bootstrap.yeti.min.css" type="text/css"/>
-    <link href="../theme/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../theme/css/bootstrap.yeti.min.css" type="text/css"/>
+    <link href="../../theme/css/font-awesome.min.css" rel="stylesheet">
 
-    <link rel="stylesheet" href="../theme/css/style.css" type="text/css"/>
+    <link rel="stylesheet" href="../../theme/css/style.css" type="text/css"/>
 
-        <link href="../feed.xml" type="application/atom+xml" rel="alternate"
+        <link href="../../feed.xml" type="application/atom+xml" rel="alternate"
               title="yew1eb's blog RSS Feed"/>
 
 </head>
@@ -37,29 +37,29 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a href="../" class="navbar-brand">
+            <a href="../../" class="navbar-brand">
 yew1eb's blog            </a>
         </div>
         <div class="collapse navbar-collapse navbar-ex1-collapse">
             <ul class="nav navbar-nav">
                     <li><a href="http://blog.csdn.net/yew1eb/">csdn博客(ACM)</a></li>
  
-                         <li><a href="../about.html">
+                         <li><a href="../../about.html">
                              关于
                           </a></li>
-                         <li><a href="../resume.html">
+                         <li><a href="../../resume.html">
                              个人简历
                           </a></li>
-                         <li><a href="../books.html">
+                         <li><a href="../../books.html">
                              阅读书籍
                           </a></li>
-                         <li><a href="../demos.html">
+                         <li><a href="../../demos.html">
                              个人项目
                           </a></li>
 				
             </ul>
             <ul class="nav navbar-nav navbar-right">
-                <li><a href="../archives.html"><i class="fa fa-th-list"></i><span class="icon-label">归档</span></a></li>
+                <li><a href="../../archives.html"><i class="fa fa-th-list"></i><span class="icon-label">归档</span></a></li>
                 <li><a href="https://github.com/yew1eb"><i class="fa fa-github fa-lg"></i></a></li>
                 <li><a href="http://weibo.com/yew1eb"><i class="fa fa-weibo fa-lg"></i></a></li>
             </ul>
@@ -71,18 +71,24 @@ yew1eb's blog            </a>
     <div class="row">
         <div class="col-sm-9">
 
-            <article>
-	   <div class="entry-content">	
-       <div class="panel panel-default">
-           <div class="panel-title"> 
-                <h2>&nbsp&nbsp<a href="../2015/03/C_plus_plus_struct.html">c++中的结构体大小计算（内存对齐）</a></h2>
-           </div> 
-           <div class="panel-body">
-                    <div class="well well-sm">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="../../2015/04/linux-File_attribute_and_authority.html"
+                       rel="bookmark"
+                       title="Permalink to Linux系统学习笔记：文件属性与权限">
+                        Linux系统学习笔记：文件属性与权限
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
 <footer class="post-info">
     <span class="label label-default">Date</span>
     <span class="published article_info">
-        <i class="fa fa-calendar"></i><time datetime="2015-03-31T13:05:48+08:00"> 2015-03-31 13:05:48</time>
+        <i class="fa fa-calendar"></i><time datetime="2015-04-04T19:49:31+08:00"> 2015-04-04 19:49:31</time>
     </span>
         <span class="label label-default">By</span>
         <span class="published article_info">
@@ -91,68 +97,80 @@ yew1eb's blog            </a>
 
     <span class="label label-default">Category</span>
     <span class="published article_info">
-        <a href="../category/cc.html">C/C++</a>
+        <a href="../../category/linuxxi-tong-xue-xi-bi-ji.html">Linux系统学习笔记</a>
     </span>
 
 	
 <span class="label label-default">Tags</span>
-	<a href="../tag/cc.html">C/C++</a>
-        /
-	<a href="../tag/volatile.html">volatile</a>
+	<a href="../../tag/linux.html">Linux</a>
 </footer><!-- /.post-info -->                    </div>
-                <div class="summary">
-                    <p> <h3>参考文章</h3>
+                </div>
+                <h3>学习文章</h3>
 <ul>
-<li><a href="http://www.cnblogs.com/ppboy_dxh/archive/2013/08/21/3273376.html">计算结构体大小</a></li>
-</ul> </p>
-                    <div class="readmore">
-                      <a class="btn btn-primary btn-xs" href="../2015/03/C_plus_plus_struct.html">阅读全文</a>
-                    </div>
-                </div>
-           </div>
-        </div>
-		</div>
-            </article>
-            <article>
-	   <div class="entry-content">	
-       <div class="panel panel-default">
-           <div class="panel-title"> 
-                <h2>&nbsp&nbsp<a href="../2015/03/C_plus_plus_volatile.html">c++中的volatile关键字</a></h2>
-           </div> 
-           <div class="panel-body">
-                    <div class="well well-sm">
-<footer class="post-info">
-    <span class="label label-default">Date</span>
-    <span class="published article_info">
-        <i class="fa fa-calendar"></i><time datetime="2015-03-31T13:05:48+08:00"> 2015-03-31 13:05:48</time>
-    </span>
-        <span class="label label-default">By</span>
-        <span class="published article_info">
-            <i class="fa fa-user"></i> yew1eb
-        </span>
+<li><a href="http://blog.csdn.net/politefish/article/details/4552914">Linux 文件类型 及文件的扩展名</a></li>
+<li><a href="http://www.cnblogs.com/kzloser/articles/2673790.html">linux 文件属性与权限</a></li>
+<li><a href="http://blog.csdn.net/kension/article/details/3796603">LINUX 硬链接与软链接的区别</a></li>
+</ul>
+            </div>
+            <br />
+    <!-- JiaThis Button BEGIN -->
+    <hr />
+    <div class="jiathis_style">
+    <span class="jiathis_txt">分享到：</span>
+    <a class="jiathis_button_qzone">QQ空间</a>
+    <a class="jiathis_button_tsina">新浪微薄</a>
+    <a class="jiathis_button_tqq">腾讯微薄</a>
+    <a class="jiathis_button_renren">人人网</a>
+    <a class="jiathis_button_kaixin001">开心网</a>
 
-    <span class="label label-default">Category</span>
-    <span class="published article_info">
-        <a href="../category/cc.html">C/C++</a>
-    </span>
+    <a href="http://www.jiathis.com/share?uid=1904070" class="jiathis jiathis_txt jiathis_separator jtico jtico_jiathis" target="_blank">更多</a>
+    <a class="jiathis_counter_style"></a>
+    </div>
+    <script type="text/javascript" >
+    var jiathis_config={
+        data_track_clickback:true,
+        summary:"",
+        shortUrl:false,
+        hideMore:false
+    }
+    </script>
+    <script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1904070" charset="utf-8"></script>
+    <!-- JiaThis Button END -->
 
-	
-<span class="label label-default">Tags</span>
-	<a href="../tag/cc.html">C/C++</a>
-        /
-	<a href="../tag/volatile.html">volatile</a>
-</footer><!-- /.post-info -->                    </div>
-                <div class="summary">
-                    <p> <p>&nbsp;volatile和const关键字一样，是一个类型修饰符，表示变量可以被编译器的某些未知因素修改，比如操作系统，硬件，某些线程等。遇到这个关键字声明的变量，编译器访问该变量的代码将不再进行优化，以提供特殊地址的稳定访问。</p>
-<p>使用该关键字的例子如下 ...</p> </p>
-                    <div class="readmore">
-                      <a class="btn btn-primary btn-xs" href="../2015/03/C_plus_plus_volatile.html">阅读全文</a>
-                    </div>
-                </div>
-           </div>
-        </div>
-		</div>
-            </article>
+    <div>
+        <br />
+        <hr />
+        <ul>
+            <li>
+                <a href="../../2015/03/C_plus_plus_struct.html">
+                    上一篇文章：c++中的结构体大小计算（内存对齐）
+                </a>
+            </li>
+        </ul>
+    </div>
+			
+			
+<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="linux-File_attribute_and_authority" 
+	data-title="Linux系统学习笔记：文件属性与权限" data-url="../../2015/04/linux-File_attribute_and_authority.html"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"yew1eb"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+
+
+        </article>
+    </section>
 
         </div>
 	
@@ -164,72 +182,87 @@ yew1eb's blog            </a>
                 <li class="list-group-item"><h4><i class="fa fa-home fa-lg"></i><span class="icon-label">最新日志</span></h4>
                     <ul class="list-group" id="recentposts">
                         <li class="list-group-item">
-                            <a href="../2015/03/C_plus_plus_struct.html">
+                            <a href="../../2015/04/linux-File_attribute_and_authority.html">
+                                Linux系统学习笔记：文件属性与权限
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="../../2015/03/C_plus_plus_struct.html">
                                 c++中的结构体大小计算（内存对齐）
                             </a>
                         </li>
                         <li class="list-group-item">
-                            <a href="../2015/03/C_plus_plus_volatile.html">
+                            <a href="../../2015/03/C_plus_plus_volatile.html">
                                 c++中的volatile关键字
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="../../2015/03/C_plus_plus_virtual.html">
+                                C++中的虚函数
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="../../2015/03/linux-process.html">
+                                Linux系统学习笔记：进程
                             </a>
                         </li>
                     </ul>
                 </li>
 
-                <li class="list-group-item"><a href="../category/index.html"><h4><i class="fa fa-coffee fa-lg"></i><span class="icon-label">日志分类</span></h4></a>
+                <li class="list-group-item"><a href="../../category/index.html"><h4><i class="fa fa-coffee fa-lg"></i><span class="icon-label">日志分类</span></h4></a>
                     <ul class="list-group" id="categories">
                         <li class="list-group-item">
-                            <a href="../category/cc.html">
+                            <a href="../../category/cc.html">
                                 <i class="fa fa-folder-open fa-lg"></i> C/C++
                             </a>
                         </li>
                         <li class="list-group-item">
-                            <a href="../category/linuxxi-tong-xue-xi-bi-ji.html">
+                            <a href="../../category/linuxxi-tong-xue-xi-bi-ji.html">
                                 <i class="fa fa-folder-open fa-lg"></i> Linux系统学习笔记
                             </a>
                         </li>
                         <li class="list-group-item">
-                            <a href="../category/ri-chang.html">
+                            <a href="../../category/ri-chang.html">
                                 <i class="fa fa-folder-open fa-lg"></i> 日常
                             </a>
                         </li>
                     </ul>
                 </li>
 
-                <li class="list-group-item"><a href="../tag/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">标签云</span></h4></a>
+                <li class="list-group-item"><a href="../../tag/index.html"><h4><i class="fa fa-tags fa-lg"></i><span class="icon-label">标签云</span></h4></a>
                     <ul class="list-group" id="tags">
                         <span class="list-group-item tag-1">
-                            <a href="../tag/linux.html">
+                            <a href="../../tag/linux.html">
                                 Linux
                             </a>
                         </span>
                         <span class="list-group-item tag-4">
-                            <a href="../tag/make.html">
+                            <a href="../../tag/make.html">
                                 Make
                             </a>
                         </span>
                         <span class="list-group-item tag-1">
-                            <a href="../tag/cc.html">
+                            <a href="../../tag/cc.html">
                                 C/C++
                             </a>
                         </span>
                         <span class="list-group-item tag-4">
-                            <a href="../tag/pelican.html">
+                            <a href="../../tag/pelican.html">
                                 pelican
                             </a>
                         </span>
                         <span class="list-group-item tag-4">
-                            <a href="../tag/xu-han-shu.html">
+                            <a href="../../tag/xu-han-shu.html">
                                 虚函数
                             </a>
                         </span>
                         <span class="list-group-item tag-2">
-                            <a href="../tag/volatile.html">
+                            <a href="../../tag/volatile.html">
                                 volatile
                             </a>
                         </span>
                         <span class="list-group-item tag-4">
-                            <a href="../tag/markdown.html">
+                            <a href="../../tag/markdown.html">
                                 Markdown
                             </a>
                         </span>
@@ -283,11 +316,11 @@ yew1eb's blog            </a>
       </div>
    </div>
 </footer>
-<script src="../theme/js/jquery.min.js"></script>
-<script src="../theme/js/bootstrap.min.js"></script>
+<script src="../../theme/js/jquery.min.js"></script>
+<script src="../../theme/js/bootstrap.min.js"></script>
 
 <!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
-<script src="../theme/js/respond.min.js"></script>
+<script src="../../theme/js/respond.min.js"></script>
 
 <!-- For the Tags Cloud -->
 <script type="text/javascript">
